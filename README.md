@@ -4,16 +4,17 @@
 
 Built with Claude AI, deployed on Fly.io Singapore.
 
-## 🚀 Deploy
-Triggered at: 2026-05-13T23:31:47.988Z
+## 🚀 Live Deploy
+Triggered: 2026-05-13T23:41:29.414Z
+
+## URLs (after deploy)
+- 🌐 Website: https://trado-bot.fly.dev
+- 📊 Dashboard: https://trado-bot.fly.dev/dashboard
+- 🤖 Telegram: @TRADO_platform_bot
+- 🏥 Health: https://trado-bot.fly.dev/health
 
 ## Services
-- 🤖 Telegram: @TRADO_platform_bot
-- 🗄️ DB: Supabase Singapore
-- ⚡ Cache: Upstash Redis
-- 🔐 Secrets: Doppler
-- 🌐 Site: https://trado-bot.fly.dev
-- 📊 Dashboard: https://trado-bot.fly.dev/dashboard
+- Supabase · Redis · Doppler · Fly.io Singapore
 
 ## Supported Exchanges
 Binance · Bybit · OKX
