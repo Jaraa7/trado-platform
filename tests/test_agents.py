@@ -173,3 +173,116 @@ class TestPipelineIntegration:
         decision = guardian.calculate_position_size(proposal)
         assert decision is not None
         assert isinstance(decision.approved, bool)
+
+
+# ── New Agents Tests ──────────────────────────────────────────────────────────
+
+class TestRegimeDetector:
+
+    def setup_method(self):
+        from agents.trading.regime_detector.agent import RegimeDetector
+        self.detector = RegimeDetector.__new__(RegimeDetector)
+        self.detector.user_id = "test"
+
+    def _make_ohlcv(self, n=30, trend="up"):
+        import random
+        candles = []
+        price = 50000
+        for i in range(n):
+            if trend == "up":
+                price *= (1 + random.uniform(0, 0.005))
+            elif trend == "down":
+                price *= (1 - random.uniform(0, 0.005))
+            candles.append([i, price*0.99, price*1.01, price*0.98, price, price*100])
+        return candles
+
+    def test_bull_regime(self):
+        from agents.trading.regime_detector.agent import MarketRegime
+        ohlcv = self._make_ohlcv(30, "up")
+        result = self.detector.quick_regime(ohlcv, adx=35)
+        assert result.regime in [MarketRegime.BULL_STRONG, MarketRegime.BULL_WEAK]
+        assert result.confidence > 0.5
+
+    def test_bear_regime(self):
+        from agents.trading.regime_detector.agent import MarketRegime
+        ohlcv = self._make_ohlcv(30, "down")
+        result = self.detector.quick_regime(ohlcv, adx=35)
+        assert result.regime in [MarketRegime.BEAR_STRONG, MarketRegime.BEAR_WEAK]
+
+    def test_empty_data_fallback(self):
+        from agents.trading.regime_detector.agent import MarketRegime
+        result = self.detector.quick_regime([])
+        assert result.regime == MarketRegime.SIDEWAYS
+
+
+class TestSentimentAnalyzer:
+
+    def setup_method(self):
+        from agents.trading.sentiment.agent import SentimentAnalyzer
+        self.analyzer = SentimentAnalyzer.__new__(SentimentAnalyzer)
+
+    def test_extreme_fear_is_buy(self):
+        result = self.analyzer.interpret_score(15)
+        assert result.label == "Extreme Fear"
+        assert result.contrarian_signal == "buy"
+
+    def test_extreme_greed_is_sell(self):
+        result = self.analyzer.interpret_score(90)
+        assert result.label == "Extreme Greed"
+        assert result.contrarian_signal == "sell"
+
+    def test_neutral_is_hold(self):
+        result = self.analyzer.interpret_score(50)
+        assert result.contrarian_signal == "hold"
+
+
+class TestPortfolioManager:
+
+    def setup_method(self):
+        from agents.trading.portfolio.agent import PortfolioManager
+        self.manager = PortfolioManager.__new__(PortfolioManager)
+
+    def test_allocation_sums_to_100(self):
+        alloc = self.manager.get_regime_allocation("bull_strong", 10000)
+        total = sum(v["pct"] for v in alloc.values())
+        assert total == 100
+
+    def test_bear_has_high_cash(self):
+        alloc = self.manager.get_regime_allocation("bear_strong", 10000)
+        assert alloc["cash"]["pct"] >= 80
+
+    def test_bull_has_low_cash(self):
+        alloc = self.manager.get_regime_allocation("bull_strong", 10000)
+        assert alloc["cash"]["pct"] <= 15
+
+
+class TestBacktester:
+
+    @pytest.mark.asyncio
+    async def test_simple_backtest(self):
+        from agents.trading.backtester.agent import BacktesterPro
+
+        tester = BacktesterPro.__new__(BacktesterPro)
+        tester.user_id = "test"
+
+        # بيانات صناعية
+        import random
+        price = 50000
+        ohlcv = []
+        for i in range(100):
+            price += random.uniform(-500, 500)
+            ohlcv.append([i, price-100, price+200, price-200, price, 1000])
+
+        # استراتيجية بسيطة
+        def entry(candles):
+            if len(candles) < 5:
+                return False
+            return candles[-1][4] > candles[-5][4]
+
+        def exit_sig(candles):
+            if len(candles) < 3:
+                return False
+            return candles[-1][4] < candles[-3][4]
+
+        result = await tester.run_simple_backtest(ohlcv, entry, exit_sig)
+        assert result.total_trades >= 0
