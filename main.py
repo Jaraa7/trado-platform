@@ -229,3 +229,18 @@ try:
     logger.info("✅ Payment routes loaded")
 except Exception as e:
     logger.warning(f"Payment routes not loaded: {e}")
+
+# ════════════════════════════════════════════════════════════════════
+# Telegram Webhook
+# ════════════════════════════════════════════════════════════════════
+@app.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    try:
+        update = await request.json()
+        from telegram_bot import handle_update
+        import asyncio
+        asyncio.create_task(handle_update(update))
+        return {"ok": True}
+    except Exception as e:
+        logger.error(f"Telegram webhook error: {e}")
+        return {"ok": False}
