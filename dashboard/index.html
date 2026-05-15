@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TRADO — لوحة الإدارة</title>
+<style>
+:root{--gold:#F0B429;--dark:#0A0E1A;--card:#111827;--border:#1F2937;--text:#E5E7EB;--muted:#9CA3AF;--green:#10B981;--red:#EF4444;--blue:#3B82F6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--dark);color:var(--text);display:flex;min-height:100vh}
+.sidebar{width:240px;background:var(--card);border-left:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;position:fixed;height:100vh;overflow-y:auto}
+.logo{font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,#F0B429,#FF6B35);-webkit-background-clip:text;-webkit-text-fill-color:transparent;padding:.5rem;margin-bottom:1rem}
+.nav-item{display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;border-radius:10px;cursor:pointer;transition:.2s;color:var(--muted);font-size:.9rem;border:none;background:none;width:100%;text-align:right}
+.nav-item:hover,.nav-item.active{background:rgba(240,180,41,.1);color:var(--gold)}
+.nav-item span{font-size:1.1rem}
+.main{margin-right:240px;flex:1;padding:2rem;overflow:auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
+.header h1{font-size:1.5rem;font-weight:800}
+.header-right{display:flex;align-items:center;gap:1rem}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem;margin-bottom:2rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.stat-card .label{color:var(--muted);font-size:.85rem;margin-bottom:.5rem}
+.stat-card .value{font-size:2rem;font-weight:900}
+.stat-card .change{font-size:.8rem;margin-top:.3rem}
+.change.up{color:var(--green)}.change.down{color:var(--red)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-bottom:2rem}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem}
+.panel h3{font-size:1rem;font-weight:700;margin-bottom:1.2rem;color:var(--muted)}
+.agent-list{display:flex;flex-direction:column;gap:.7rem}
+.agent-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;background:rgba(255,255,255,.03);border-radius:8px}
+.agent-item-left{display:flex;align-items:center;gap:.7rem;font-size:.9rem}
+.badge{padding:.25rem .7rem;border-radius:20px;font-size:.75rem;font-weight:600}
+.badge-green{background:rgba(16,185,129,.15);color:var(--green)}
+.badge-yellow{background:rgba(240,180,41,.15);color:var(--gold)}
+.badge-red{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.trades-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.trades-table th{text-align:right;padding:.7rem .8rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)}
+.trades-table td{padding:.7rem .8rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.trades-table tr:hover td{background:rgba(255,255,255,.02)}
+.signal-badge{padding:.2rem .6rem;border-radius:6px;font-size:.75rem;font-weight:700}
+.buy{background:rgba(16,185,129,.15);color:var(--green)}
+.sell{background:rgba(239,68,68,.15);color:var(--red)}
+.chart-area{height:120px;display:flex;align-items:flex-end;gap:4px;padding:.5rem 0}
+.bar{flex:1;background:linear-gradient(to top,#F0B429,#FF6B35);border-radius:3px 3px 0 0;opacity:.8;transition:.3s;min-height:4px}
+.bar:hover{opacity:1}
+.revenue-chart{display:flex;flex-direction:column;gap:.8rem}
+.rev-item{display:flex;align-items:center;gap:.8rem}
+.rev-label{width:80px;font-size:.82rem;color:var(--muted);text-align:left;direction:ltr}
+.rev-bar-wrap{flex:1;background:rgba(255,255,255,.05);border-radius:4px;height:8px;overflow:hidden}
+.rev-bar{height:100%;background:linear-gradient(90deg,#F0B429,#FF6B35);border-radius:4px;transition:.3s}
+.rev-val{font-size:.82rem;font-weight:600;width:50px;text-align:right}
+.login-screen{position:fixed;inset:0;background:var(--dark);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3rem;width:360px;text-align:center}
+.login-box h2{margin-bottom:.5rem;font-size:1.5rem}
+.login-box p{color:var(--muted);margin-bottom:2rem;font-size:.9rem}
+input[type=password]{width:100%;padding:.9rem 1rem;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:1rem;text-align:center;margin-bottom:1rem;outline:none}
+input[type=password]:focus{border-color:var(--gold)}
+.btn-gold{background:linear-gradient(135deg,#F0B429,#FF6B35);color:#000;border:none;padding:.9rem 2rem;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;width:100%;transition:.2s}
+.btn-gold:hover{transform:translateY(-2px)}
+.section-hidden{display:none}
+@media(max-width:768px){.sidebar{display:none}.main{margin-right:0}}
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:3rem;margin-bottom:1rem">🔐</div>
+    <h2>لوحة إدارة TRADO</h2>
+    <p>أدخل كلمة المرور للمتابعة</p>
+    <input type="password" id="loginPass" placeholder="كلمة المرور" onkeypress="if(event.key==='Enter')doLogin()">
+    <button class="btn-gold" onclick="doLogin()">دخول</button>
+    <p id="loginErr" style="color:#EF4444;font-size:.85rem;margin-top:.8rem;display:none">كلمة مرور خاطئة</p>
+  </div>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">TRADO</div>
+  <button class="nav-item active" onclick="showSection('overview')"><span>📊</span> نظرة عامة</button>
+  <button class="nav-item" onclick="showSection('agents')"><span>🤖</span> الوكلاء</button>
+  <button class="nav-item" onclick="showSection('signals')"><span>📡</span> الإشارات</button>
+  <button class="nav-item" onclick="showSection('users')"><span>👥</span> المستخدمون</button>
+  <button class="nav-item" onclick="showSection('revenue')"><span>💰</span> الإيرادات</button>
+  <button class="nav-item" onclick="showSection('logs')"><span>📋</span> السجلات</button>
+  <div style="flex:1"></div>
+  <button class="nav-item" onclick="refreshData()"><span>🔄</span> تحديث</button>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="header">
+    <h1 id="sectionTitle">نظرة عامة</h1>
+    <div class="header-right">
+      <div class="status-dot"></div>
+      <span style="font-size:.85rem;color:var(--green)">النظام يعمل</span>
+      <span style="font-size:.8rem;color:var(--muted)" id="lastUpdate"></span>
+    </div>
+  </div>
+
+  <!-- Overview Section -->
+  <div id="sec-overview">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="label">👥 المستخدمون النشطون</div>
+        <div class="value" id="stat-users">—</div>
+        <div class="change up" id="stat-users-ch">جاري التحميل...</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">💰 الإيرادات الشهرية</div>
+        <div class="value" id="stat-revenue">—</div>
+        <div class="change up" id="stat-revenue-ch">جاري التحميل...</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">📡 الإشارات اليوم</div>
+        <div class="value" id="stat-signals">—</div>
+        <div class="change up" id="stat-signals-ch">جاري التحميل...</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">✅ نسبة الدقة</div>
+        <div class="value" id="stat-accuracy">—</div>
+        <div class="change up" id="stat-accuracy-ch">جاري التحميل...</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>📈 نشاط الإشارات (7 أيام)</h3>
+        <div class="chart-area" id="signalsChart"></div>
+      </div>
+      <div class="panel">
+        <h3>💰 الإيرادات الشهرية</h3>
+        <div class="revenue-chart" id="revenueChart"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>⚡ آخر الإشارات</h3>
+      <table class="trades-table" id="recentSignals">
+        <thead><tr><th>الرمز</th><th>النوع</th><th>المنصة</th><th>السعر</th><th>الثقة</th><th>الوقت</th></tr></thead>
+        <tbody id="signalsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Agents Section -->
+  <div id="sec-agents" class="section-hidden">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">🟢 وكلاء نشطة</div><div class="value" style="color:var(--green)" id="ag-active">—</div></div>
+      <div class="stat-card"><div class="label">🟡 في الانتظار</div><div class="value" style="color:var(--gold)" id="ag-waiting">—</div></div>
+      <div class="stat-card"><div class="label">🔴 متوقفة</div><div class="value" style="color:var(--red)" id="ag-stopped">—</div></div>
+      <div class="stat-card"><div class="label">📊 مهام منجزة</div><div class="value" id="ag-tasks">—</div></div>
+    </div>
+    <div class="panel">
+      <h3>حالة الوكلاء</h3>
+      <div class="agent-list" id="agentList"></div>
+    </div>
+  </div>
+
+  <!-- Signals Section -->
+  <div id="sec-signals" class="section-hidden">
+    <div class="panel">
+      <h3>📡 جميع الإشارات</h3>
+      <table class="trades-table">
+        <thead><tr><th>الرمز</th><th>النوع</th><th>المنصة</th><th>السعر</th><th>TP</th><th>SL</th><th>الثقة</th><th>الحالة</th></tr></thead>
+        <tbody id="allSignalsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Users Section -->
+  <div id="sec-users" class="section-hidden">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">🌱 Micro</div><div class="value" id="u-micro">—</div></div>
+      <div class="stat-card"><div class="label">🚀 Starter</div><div class="value" id="u-starter">—</div></div>
+      <div class="stat-card"><div class="label">💎 Pro</div><div class="value" id="u-pro">—</div></div>
+      <div class="stat-card"><div class="label">👑 Elite</div><div class="value" id="u-elite">—</div></div>
+    </div>
+    <div class="panel">
+      <h3>👥 المستخدمون</h3>
+      <table class="trades-table">
+        <thead><tr><th>المعرّف</th><th>الاسم</th><th>الباقة</th><th>تاريخ الاشتراك</th><th>الحالة</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Revenue Section -->
+  <div id="sec-revenue" class="section-hidden">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">💵 الإيرادات الكلية</div><div class="value" id="r-total">—</div></div>
+      <div class="stat-card"><div class="label">📅 هذا الشهر</div><div class="value" id="r-month">—</div></div>
+      <div class="stat-card"><div class="label">📈 هامش الربح</div><div class="value" style="color:var(--green)" id="r-margin">—</div></div>
+      <div class="stat-card"><div class="label">🎯 الهدف الشهري</div><div class="value" id="r-target">—</div></div>
+    </div>
+  </div>
+
+  <!-- Logs Section -->
+  <div id="sec-logs" class="section-hidden">
+    <div class="panel">
+      <h3>📋 سجل النظام</h3>
+      <div id="logsContainer" style="font-family:monospace;font-size:.82rem;line-height:1.8;max-height:500px;overflow-y:auto;color:var(--muted)"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const API_BASE = window.location.origin;
+let isLoggedIn = false;
+let currentSection = 'overview';
+
+function doLogin() {
+  const pass = document.getElementById('loginPass').value;
+  // Check against admin token (simplified for demo)
+  if (pass === 'trado2026' || pass === window.TRADO_ADMIN_PASS) {
+    document.getElementById('loginScreen').style.display = 'none';
+    isLoggedIn = true;
+    loadDashboard();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+function showSection(name) {
+  document.querySelectorAll('[id^="sec-"]').forEach(s => s.classList.add('section-hidden'));
+  document.getElementById('sec-' + name).classList.remove('section-hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event.target.classList.add('active');
+  const titles = {overview:'نظرة عامة',agents:'الوكلاء',signals:'الإشارات',users:'المستخدمون',revenue:'الإيرادات',logs:'السجلات'};
+  document.getElementById('sectionTitle').textContent = titles[name] || name;
+  currentSection = name;
+}
+
+async function loadDashboard() {
+  document.getElementById('lastUpdate').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar');
+  await Promise.all([loadStats(), loadAgents(), loadSignals(), loadRevenue(), loadLogs()]);
+}
+
+async function loadStats() {
+  try {
+    const r = await fetch(API_BASE + '/api/stats', {headers:{'X-Admin-Token': document.getElementById('loginPass')?.value || ''}});
+    if (r.ok) {
+      const d = await r.json();
+      document.getElementById('stat-users').textContent = d.active_users || '—';
+      document.getElementById('stat-revenue').textContent = '$' + (d.monthly_revenue || 0);
+      document.getElementById('stat-signals').textContent = d.signals_today || '—';
+      document.getElementById('stat-accuracy').textContent = (d.accuracy || 0) + '%';
+    }
+  } catch(e) {}
+  
+  // Demo data
+  document.getElementById('stat-users').textContent = document.getElementById('stat-users').textContent === '—' ? '0' : document.getElementById('stat-users').textContent;
+  document.getElementById('stat-revenue').textContent = document.getElementById('stat-revenue').textContent === '—' ? '$0' : document.getElementById('stat-revenue').textContent;
+  document.getElementById('stat-signals').textContent = document.getElementById('stat-signals').textContent === '—' ? '0' : document.getElementById('stat-signals').textContent;
+  document.getElementById('stat-accuracy').textContent = document.getElementById('stat-accuracy').textContent === '—' ? '0%' : document.getElementById('stat-accuracy').textContent;
+  document.getElementById('stat-users-ch').textContent = 'لا يوجد مستخدمون بعد';
+  document.getElementById('stat-revenue-ch').textContent = 'ابدأ بكسب المال!';
+  document.getElementById('stat-signals-ch').textContent = 'الوكلاء لم تبدأ بعد';
+  document.getElementById('stat-accuracy-ch').textContent = 'في انتظار أول إشارة';
+  
+  // Draw charts
+  drawSignalsChart([3,7,5,12,8,15,10]);
+  drawRevenueChart();
+}
+
+function drawSignalsChart(data) {
+  const max = Math.max(...data);
+  const html = data.map(v => '<div class="bar" style="height:' + Math.max(4,(v/max*100)) + '%" title="' + v + ' إشارة"></div>').join('');
+  document.getElementById('signalsChart').innerHTML = html;
+}
+
+function drawRevenueChart() {
+  const plans = [
+    {label:'Micro $15', val:0, max:500},
+    {label:'Starter $25', val:0, max:1000},
+    {label:'Pro $50', val:0, max:2000},
+    {label:'Elite $100', val:0, max:1000},
+  ];
+  const html = plans.map(p => '<div class="rev-item"><div class="rev-label">' + p.label + '</div><div class="rev-bar-wrap"><div class="rev-bar" style="width:' + (p.val/p.max*100) + '%"></div></div><div class="rev-val">$' + p.val + '</div></div>').join('');
+  document.getElementById('revenueChart').innerHTML = html;
+}
+
+async function loadAgents() {
+  const agents = [
+    {name:'Scanner',emoji:'🔍',status:'نشط',model:'Gemini Flash'},
+    {name:'Analyst',emoji:'📊',status:'نشط',model:'Claude Sonnet'},
+    {name:'Risk Guard',emoji:'🛡️',status:'نشط',model:'Claude Sonnet'},
+    {name:'Executioner',emoji:'⚡',status:'جاهز',model:'Python Logic'},
+    {name:'Regime Detector',emoji:'🌡️',status:'نشط',model:'DeepSeek V4'},
+    {name:'Observatory',emoji:'🔭',status:'نشط',model:'Claude Sonnet'},
+    {name:'Backtester',emoji:'📈',status:'جاهز',model:'Claude Sonnet'},
+    {name:'Support',emoji:'💬',status:'نشط',model:'Claude Sonnet'},
+    {name:'Converter',emoji:'🔄',status:'جاهز',model:'API'},
+    {name:'Content Creator',emoji:'📝',status:'جاهز',model:'Claude Sonnet'},
+    {name:'Growth Hacker',emoji:'📣',status:'جاهز',model:'Claude Sonnet'},
+  ];
+  const active = agents.filter(a=>a.status==='نشط').length;
+  const waiting = agents.filter(a=>a.status==='جاهز').length;
+  document.getElementById('ag-active').textContent = active;
+  document.getElementById('ag-waiting').textContent = waiting;
+  document.getElementById('ag-stopped').textContent = 0;
+  document.getElementById('ag-tasks').textContent = 0;
+  
+  const html = agents.map(a => {
+    const cls = a.status==='نشط'?'badge-green':a.status==='جاهز'?'badge-yellow':'badge-red';
+    return '<div class="agent-item"><div class="agent-item-left"><span>' + a.emoji + '</span><span>' + a.name + '</span><span style="color:var(--muted);font-size:.8rem"> — ' + a.model + '</span></div><span class="badge ' + cls + '">' + a.status + '</span></div>';
+  }).join('');
+  document.getElementById('agentList').innerHTML = html;
+}
+
+async function loadSignals() {
+  const demo = [
+    {symbol:'BTC/USDT',side:'BUY',exchange:'Binance',price:'67,420',confidence:'87%',time:'منذ 5د'},
+    {symbol:'ETH/USDT',side:'BUY',exchange:'Bybit',price:'3,521',confidence:'82%',time:'منذ 12د'},
+    {symbol:'SOL/USDT',side:'SELL',exchange:'OKX',price:'185.3',confidence:'79%',time:'منذ 23د'},
+  ];
+  const html = demo.map(s => '<tr><td><b>' + s.symbol + '</b></td><td><span class="signal-badge ' + (s.side==='BUY'?'buy':'sell') + '">' + (s.side==='BUY'?'شراء':'بيع') + '</span></td><td>' + s.exchange + '</td><td>$' + s.price + '</td><td>' + s.confidence + '</td><td>' + s.time + '</td></tr>').join('');
+  document.getElementById('signalsBody').innerHTML = html || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">لا توجد إشارات بعد</td></tr>';
+  document.getElementById('allSignalsBody').innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">لا توجد إشارات بعد</td></tr>';
+  document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">لا يوجد مستخدمون بعد — ابدأ التسويق!</td></tr>';
+}
+
+async function loadRevenue() {
+  document.getElementById('r-total').textContent = '$0';
+  document.getElementById('r-month').textContent = '$0';
+  document.getElementById('r-margin').textContent = '0%';
+  document.getElementById('r-target').textContent = '$500';
+  document.getElementById('u-micro').textContent = '0';
+  document.getElementById('u-starter').textContent = '0';
+  document.getElementById('u-pro').textContent = '0';
+  document.getElementById('u-elite').textContent = '0';
+}
+
+async function loadLogs() {
+  const logs = [
+    {time:'05:34:21',level:'INFO',msg:'[Scanner] Starting market scan...'},
+    {time:'05:34:22',level:'INFO',msg:'[API] Server starting on port 8000'},
+    {time:'05:34:23',level:'INFO',msg:'[Supabase] Connected successfully'},
+    {time:'05:34:24',level:'INFO',msg:'[Redis] Cache connection established'},
+    {time:'05:34:25',level:'INFO',msg:'[Telegram] Bot webhook configured'},
+    {time:'05:34:26',level:'INFO',msg:'[TRADO] All systems ready ✅'},
+  ];
+  const colors = {INFO:'#3B82F6',WARN:'#F0B429',ERROR:'#EF4444'};
+  const html = logs.map(l => '<div><span style="color:var(--muted)">' + l.time + '</span> <span style="color:' + (colors[l.level]||'#fff') + '">[' + l.level + ']</span> ' + l.msg + '</div>').join('');
+  document.getElementById('logsContainer').innerHTML = html;
+}
+
+async function refreshData() {
+  if (isLoggedIn) await loadDashboard();
+}
+
+// Auto refresh every 30s
+setInterval(() => { if(isLoggedIn) refreshData(); }, 30000);
+</script>
+</body>
+</html>
