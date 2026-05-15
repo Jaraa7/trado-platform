@@ -26,7 +26,7 @@ class ArbitrageOpportunity:
 class ArbitrageHunter(BaseAgent):
     AGENT_ID = "arbitrage_hunter"
     AGENT_NAME = "Arbitrage Hunter 🎯"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1200
 
     # رسوم المنصات التقريبية

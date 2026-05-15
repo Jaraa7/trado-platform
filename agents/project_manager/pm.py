@@ -75,7 +75,7 @@ class TRADOProjectManager(BaseAgent):
 
     AGENT_ID = "trado_pm"
     AGENT_NAME = "TRADO Project Manager 🎯"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 4000
 
     @property

@@ -30,7 +30,7 @@ MasterOrchestrator = create_agent_class(
         "Cross-department communication", "Emergency response", "Long-term planning",
         "Risk-reward balancing", "Stakeholder communication"
     ],
-    model="claude-sonnet-4-20250514"
+    model="claude-sonnet-4-5"
 )
 
 

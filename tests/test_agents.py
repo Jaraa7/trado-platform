@@ -20,6 +20,7 @@ class TestRiskGuardian:
         self.guardian.MAX_DRAWDOWN = 0.15
         self.guardian.MAX_LEVERAGE = 3
         self.guardian.MIN_RISK_REWARD = 1.5
+        self.guardian.MAX_POSITION_CONCENTRATION = 0.30
         self.TradeProposal = TradeProposal
 
     def test_valid_trade_approved(self):
@@ -75,11 +76,11 @@ class TestRiskGuardian:
         )
         decision = self.guardian.calculate_position_size(proposal)
         if decision.approved:
-            # Max risk = 2% of 10000 = $200
-            # SL distance = 2%
-            # Size = $200 / 0.02 = $10000 (أو أقل)
+            # حجم الصفقة موجود ولا يتجاوز الـ concentration cap
             assert decision.recommended_size > 0
-            assert decision.risk_percentage == pytest.approx(2.0, abs=0.1)
+            assert decision.recommended_size <= 10000 * 0.30  # 30% max
+            # الخسارة المحتملة < 2%
+            assert decision.risk_percentage <= 2.0
 
 
 # ── Memory System Tests ───────────────────────────────────────────────────────
@@ -146,8 +147,11 @@ class TestCollaborationRules:
 
 class TestPipelineIntegration:
 
-    @pytest.mark.asyncio
-    async def test_risk_pipeline(self):
+    def setup_method(self):
+        from agents.trading.risk_guardian.agent import RiskGuardian, TradeProposal
+        self.TradeProposal = TradeProposal
+
+    def test_risk_pipeline(self):
         """اختبار pipeline مبسّط بدون APIs خارجية"""
         from agents.trading.risk_guardian.agent import RiskGuardian, TradeProposal
 
@@ -159,6 +163,7 @@ class TestPipelineIntegration:
         guardian.MAX_DRAWDOWN = 0.15
         guardian.MAX_LEVERAGE = 3
         guardian.MIN_RISK_REWARD = 1.5
+        guardian.MAX_POSITION_CONCENTRATION = 0.30
 
         proposal = TradeProposal(
             symbol="BTC/USDT",
@@ -518,3 +523,56 @@ class TestNewPricingTiers:
         assert get_upgrade_path(TierName.MICRO) == TierName.STARTER
         assert get_upgrade_path(TierName.PRO) == TierName.ELITE
         assert get_upgrade_path(TierName.FOUNDER) is None  # أعلى باقة
+
+
+# ── New Concentration Risk Test ────────────────────────────────────────────────
+
+class TestConcentrationRisk:
+    """اختبار الـ bug المُكتشف والمُصلح: Concentration Risk"""
+
+    def _make_guardian(self):
+        from agents.trading.risk_guardian.agent import RiskGuardian
+        g = RiskGuardian.__new__(RiskGuardian)
+        g.user_id = "test"
+        g.AGENT_ID = "risk_guardian"
+        g.MAX_RISK_PER_TRADE = 0.02
+        g.MAX_DAILY_LOSS = 0.06
+        g.MAX_DRAWDOWN = 0.15
+        g.MAX_LEVERAGE = 3
+        g.MIN_RISK_REWARD = 1.5
+        g.MAX_POSITION_CONCENTRATION = 0.30
+        return g
+
+    def test_concentration_caps_at_30_pct(self):
+        """التأكد من أن أي صفقة لا تتجاوز 30% من رأس المال"""
+        from agents.trading.risk_guardian.agent import TradeProposal
+
+        guardian = self._make_guardian()
+        # سيناريو حقيقي: SL قريب (~3%) → بدون cap الحجم سيكون 65%
+        proposal = TradeProposal(
+            symbol="BTC/USDT", direction="long",
+            entry_price=65000, stop_loss=63000, take_profit=70000,
+            account_balance=10000, leverage=1
+        )
+        decision = guardian.calculate_position_size(proposal)
+
+        # يجب ألا يتجاوز 30%
+        max_allowed = 10000 * 0.30
+        assert decision.recommended_size <= max_allowed
+        assert decision.approved is True
+
+    def test_small_sl_distance_capped(self):
+        """SL قريب جداً = حجم كبير = يجب الـ cap"""
+        from agents.trading.risk_guardian.agent import TradeProposal
+
+        guardian = self._make_guardian()
+        # SL على بعد 1% فقط (حجم نظري = 200% بدون cap!)
+        proposal = TradeProposal(
+            symbol="ETH/USDT", direction="long",
+            entry_price=3000, stop_loss=2970, take_profit=3100,
+            account_balance=10000, leverage=1
+        )
+        decision = guardian.calculate_position_size(proposal)
+        if decision.approved:
+            # يجب الـ cap عند 30%
+            assert decision.recommended_size <= 3000

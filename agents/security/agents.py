@@ -111,7 +111,7 @@ PenetrationTester = create_agent_class(
 class CryptoDefender(BaseAgent):
     AGENT_ID = "crypto_defender"
     AGENT_NAME = "Crypto Defender 🔑"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 1500
 
     @property
@@ -186,7 +186,7 @@ class FraudRiskScore:
 class AntiFraudAgent(BaseAgent):
     AGENT_ID = "anti_fraud"
     AGENT_NAME = "Anti-Fraud Agent 🚨"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1200
 
     @property
@@ -294,7 +294,7 @@ ComplianceOfficer = create_agent_class(
 class DDoSShield(BaseAgent):
     AGENT_ID = "ddos_shield"
     AGENT_NAME = "DDoS Shield 🛡️"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1000
 
     def __init__(self, user_id: str = "system"):

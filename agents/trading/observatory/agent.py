@@ -11,7 +11,7 @@ from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 class Observatory(BaseAgent):
     AGENT_ID = "observatory"
     AGENT_NAME = "Observatory 👁️"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1000
 
     def __init__(self, user_id: str = "system"):

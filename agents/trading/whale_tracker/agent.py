@@ -21,7 +21,7 @@ class WhaleAlert:
 class WhaleTracker(BaseAgent):
     AGENT_ID = "whale_tracker"
     AGENT_NAME = "Whale Tracker 🐋"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1200
 
     # أنواع المحافظ

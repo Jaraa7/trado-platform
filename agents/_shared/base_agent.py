@@ -56,14 +56,14 @@ class BaseAgent(ABC):
     # يجب تعريفها في كل agent
     AGENT_ID: str = "base"
     AGENT_NAME: str = "Base Agent"
-    MODEL: str = "claude-sonnet-4-20250514"
+    MODEL: str = "claude-sonnet-4-5"
     MAX_TOKENS: int = 2000
     KNOWLEDGE_DIR: Optional[str] = None
 
     # تكاليف النماذج (USD per 1M tokens)
     MODEL_COSTS = {
-        "claude-sonnet-4-20250514": {"input": 3.0, "output": 15.0},
-        "claude-haiku-4-5-20251001": {"input": 0.25, "output": 1.25},
+        "claude-sonnet-4-5": {"input": 3.0, "output": 15.0},
+        "claude-haiku-4-5": {"input": 0.25, "output": 1.25},
     }
 
     def __init__(self, user_id: str = "system"):

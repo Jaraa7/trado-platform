@@ -13,7 +13,7 @@ def create_agent_class(
     expertise: str,
     output_format: str,
     skills: list[str],
-    model: str = "claude-sonnet-4-20250514",
+    model: str = "claude-sonnet-4-5",
     max_tokens: int = 2000,
     knowledge_dir: Optional[str] = None,
 ) -> Type[BaseAgent]:

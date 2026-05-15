@@ -19,7 +19,7 @@ class SentimentScore:
 class SentimentAnalyzer(BaseAgent):
     AGENT_ID = "sentiment_analyzer"
     AGENT_NAME = "Sentiment Analyzer 💭"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 1200
 
     @property

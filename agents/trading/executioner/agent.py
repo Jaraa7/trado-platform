@@ -27,7 +27,7 @@ class ExecutionResult:
 class ExecutionerPro(BaseAgent):
     AGENT_ID = "executioner_pro"
     AGENT_NAME = "Executioner Pro ⚡"
-    MODEL = "claude-haiku-4-5-20251001"
+    MODEL = "claude-haiku-4-5"
     MAX_TOKENS = 500
 
     @property

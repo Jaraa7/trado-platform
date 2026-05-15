@@ -52,7 +52,7 @@ class BacktestResult:
 class BacktesterPro(BaseAgent):
     AGENT_ID = "backtester_pro"
     AGENT_NAME = "Backtester Pro 📈"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 3000
 
     @property

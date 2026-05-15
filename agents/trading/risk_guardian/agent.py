@@ -31,15 +31,16 @@ class RiskDecision:
 class RiskGuardian(BaseAgent):
     AGENT_ID = "risk_guardian"
     AGENT_NAME = "Risk Guardian 🛡️"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 1500
 
     # القواعد الصارمة
-    MAX_RISK_PER_TRADE = settings.max_risk_per_trade    # 2%
+    MAX_RISK_PER_TRADE = settings.max_risk_per_trade    # 2% من رأس المال (خسارة محتملة)
     MAX_DAILY_LOSS = settings.max_daily_loss             # 6%
     MAX_DRAWDOWN = settings.max_monthly_drawdown         # 15%
     MAX_LEVERAGE = settings.max_leverage                 # 3x
     MIN_RISK_REWARD = 1.5                               # R:R >= 1.5
+    MAX_POSITION_CONCENTRATION = 0.30                   # 🆕 max 30% رأس المال في صفقة واحدة
 
     @property
     def system_prompt(self) -> str:
@@ -106,9 +107,20 @@ class RiskGuardian(BaseAgent):
                 veto_applied=True
             )
 
-        # حساب الحجم الصحيح
+        # حساب الحجم الصحيح (من ناحية الخسارة)
         max_risk_amount = proposal.account_balance * self.MAX_RISK_PER_TRADE
         position_size = max_risk_amount / sl_distance
+
+        # 🆕 فحص Concentration Risk
+        max_position_size = proposal.account_balance * self.MAX_POSITION_CONCENTRATION
+        if position_size > max_position_size:
+            # نطبّق الحد الأكثر صرامة
+            position_size = max_position_size
+            concentration_pct = position_size / proposal.account_balance * 100
+            actual_risk_pct = (position_size * sl_distance) / proposal.account_balance * 100
+        else:
+            concentration_pct = position_size / proposal.account_balance * 100
+            actual_risk_pct = self.MAX_RISK_PER_TRADE * 100
 
         # تحقق من الـ leverage
         if proposal.leverage > self.MAX_LEVERAGE:
@@ -120,9 +132,9 @@ class RiskGuardian(BaseAgent):
 
         return RiskDecision(
             approved=True,
-            reason="الصفقة تستوفي جميع شروط إدارة المخاطر",
+            reason=f"Size: {concentration_pct:.1f}% من رأس المال | Risk: {actual_risk_pct:.2f}% | R:R {risk_reward:.2f}",
             recommended_size=round(position_size, 2),
-            risk_percentage=self.MAX_RISK_PER_TRADE * 100,
+            risk_percentage=round(actual_risk_pct, 2),
             risk_reward=round(risk_reward, 2)
         )
 

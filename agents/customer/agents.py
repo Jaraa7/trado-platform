@@ -21,7 +21,7 @@ First response time < 5 دقائق. تحل المشكلات بدقة وسرعة.
         "Live chat", "Email support", "Telegram support",
         "Macros management", "KB updates"
     ],
-    model="claude-haiku-4-5-20251001"
+    model="claude-haiku-4-5"
 )
 
 
@@ -44,7 +44,7 @@ def make_chatbot(tier: str, signals_per_day, exchanges, features: str):
             "Billing questions", "Cancellation handling", "Reactivation",
             "Multi-language support"
         ],
-        model="claude-haiku-4-5-20251001",
+        model="claude-haiku-4-5",
         max_tokens=800
     )
 

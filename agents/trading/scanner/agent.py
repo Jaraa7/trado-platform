@@ -11,7 +11,7 @@ from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 class ScannerPro(BaseAgent):
     AGENT_ID = "scanner_pro"
     AGENT_NAME = "Scanner Pro 🔍"
-    MODEL = "claude-haiku-4-5-20251001"  # سرعة + رخص
+    MODEL = "claude-haiku-4-5"  # سرعة + رخص
     MAX_TOKENS = 1500
     KNOWLEDGE_DIR = "knowledge_base/trading"
 

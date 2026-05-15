@@ -25,7 +25,7 @@ class NewsItem:
 class NewsAnalyst(BaseAgent):
     AGENT_ID = "news_analyst"
     AGENT_NAME = "News Analyst 📰"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 2000
 
     @property

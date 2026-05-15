@@ -21,7 +21,7 @@ class TradingStrategy:
 class StrategyDesigner(BaseAgent):
     AGENT_ID = "strategy_designer"
     AGENT_NAME = "Strategy Designer 🎨"
-    MODEL = "claude-sonnet-4-20250514"
+    MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 3000
 
     # مكتبة الاستراتيجيات الجاهزة
