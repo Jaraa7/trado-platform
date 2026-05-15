@@ -152,22 +152,30 @@ export default function HomePage() {
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled?"bg-[#050810]/90 backdrop-blur-xl border-b border-white/5":""}`}>
         <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <svg width="36" height="36" viewBox="0 0 120 120">
+            <svg width="40" height="40" viewBox="0 0 100 100">
               <defs>
                 <linearGradient id="lg1" x1="0%" y1="100%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#0ea5e9"/>
                   <stop offset="100%" stopColor="#10b981"/>
                 </linearGradient>
+                <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.15"/>
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.05"/>
+                </linearGradient>
               </defs>
-              <polygon points="60,8 110,100 10,100" fill="none" stroke="url(#lg1)" strokeWidth="6" strokeLinejoin="round"/>
-              <circle cx="60" cy="52" r="12" fill="none" stroke="url(#lg1)" strokeWidth="3"/>
-              <line x1="60" y1="28" x2="60" y2="40" stroke="url(#lg1)" strokeWidth="2.5"/>
-              <line x1="48" y1="62" x2="38" y2="76" stroke="url(#lg1)" strokeWidth="2.5"/>
-              <line x1="72" y1="62" x2="82" y2="76" stroke="url(#lg1)" strokeWidth="2.5"/>
-              <circle cx="60" cy="52" r="4" fill="url(#lg1)"/>
-              <circle cx="60" cy="24" r="3" fill="#10b981"/>
-              <circle cx="35" cy="80" r="3" fill="#0ea5e9"/>
-              <circle cx="85" cy="80" r="3" fill="#0ea5e9"/>
+              <polygon points="50,6 96,90 4,90" fill="url(#lg2)" stroke="url(#lg1)" strokeWidth="3.5" strokeLinejoin="round"/>
+              <circle cx="50" cy="52" r="10" fill="none" stroke="url(#lg1)" strokeWidth="2"/>
+              <circle cx="50" cy="52" r="3.5" fill="url(#lg1)"/>
+              <line x1="50" y1="30" x2="50" y2="42" stroke="url(#lg1)" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="42" y1="60" x2="26" y2="76" stroke="url(#lg1)" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="58" y1="60" x2="74" y2="76" stroke="url(#lg1)" strokeWidth="1.8" strokeLinecap="round"/>
+              <line x1="40" y1="52" x2="28" y2="52" stroke="url(#lg1)" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="60" y1="52" x2="72" y2="52" stroke="url(#lg1)" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="50" cy="27" r="3" fill="#10b981"/>
+              <circle cx="24" cy="78" r="3" fill="#0ea5e9"/>
+              <circle cx="76" cy="78" r="3" fill="#0ea5e9"/>
+              <circle cx="25" cy="52" r="2" fill="#0ea5e9" opacity="0.7"/>
+              <circle cx="75" cy="52" r="2" fill="#0ea5e9" opacity="0.7"/>
             </svg>
             <span className="font-display text-xl font-bold tracking-tight">Trado<span className="grad">AI</span></span>
           </a>
@@ -427,11 +435,20 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-10">
             <div className="max-w-xs">
               <div className="flex items-center gap-3 mb-4">
-                <svg width="32" height="32" viewBox="0 0 120 120">
-                  <defs><linearGradient id="flg" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#0ea5e9"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs>
-                  <polygon points="60,8 110,100 10,100" fill="none" stroke="url(#flg)" strokeWidth="6" strokeLinejoin="round"/>
-                  <circle cx="60" cy="52" r="12" fill="none" stroke="url(#flg)" strokeWidth="3"/>
-                  <circle cx="60" cy="52" r="4" fill="url(#flg)"/>
+                <svg width="34" height="34" viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="flg" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#0ea5e9"/><stop offset="100%" stopColor="#10b981"/></linearGradient>
+                    <linearGradient id="flg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.15"/><stop offset="100%" stopColor="#10b981" stopOpacity="0.05"/></linearGradient>
+                  </defs>
+                  <polygon points="50,6 96,90 4,90" fill="url(#flg2)" stroke="url(#flg)" strokeWidth="3.5" strokeLinejoin="round"/>
+                  <circle cx="50" cy="52" r="10" fill="none" stroke="url(#flg)" strokeWidth="2"/>
+                  <circle cx="50" cy="52" r="3.5" fill="url(#flg)"/>
+                  <line x1="50" y1="30" x2="50" y2="42" stroke="url(#flg)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="42" y1="60" x2="26" y2="76" stroke="url(#flg)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="58" y1="60" x2="74" y2="76" stroke="url(#flg)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <circle cx="50" cy="27" r="3" fill="#10b981"/>
+                  <circle cx="24" cy="78" r="3" fill="#0ea5e9"/>
+                  <circle cx="76" cy="78" r="3" fill="#0ea5e9"/>
                 </svg>
                 <span className="font-display text-xl font-bold">Trado<span className="grad">AI</span></span>
               </div>
