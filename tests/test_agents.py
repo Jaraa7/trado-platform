@@ -422,3 +422,99 @@ class TestDDoSShield:
 
         # حظر بعد التجاوز
         assert shield.check_rate_limit("1.2.3.4", max_per_minute=60) is False
+
+
+# ── Pricing Tier Tests ────────────────────────────────────────────────────────
+
+class TestNewPricingTiers:
+
+    def test_8_tiers_exist(self):
+        from config.tiers import TIERS, TierName
+        # 9 = 8 paid + 1 trial
+        assert len(TIERS) == 9
+        for name in TierName:
+            assert name in TIERS
+
+    def test_all_tiers_have_positive_margin(self):
+        from config.tiers import TIERS, TierName
+        for tier_name, tier in TIERS.items():
+            if tier_name in [TierName.TRIAL, TierName.ENTERPRISE]:
+                continue
+            assert tier.margin_monthly > 0, f"{tier.display_name} has negative margin"
+
+    def test_pro_tier_pricing(self):
+        from config.tiers import get_tier, TierName
+        pro = get_tier(TierName.PRO)
+        assert pro.price_monthly == 99
+        assert pro.margin_monthly > 0.5  # >50% margin
+
+    def test_all_features_in_all_paid_tiers(self):
+        """التأكد من أن كل الباقات لها وصول لـ 87 agent"""
+        from config.tiers import TIERS, TierName
+        for tier_name, tier in TIERS.items():
+            if tier_name == TierName.TRIAL:
+                continue
+            assert tier.features.all_87_agents is True, \
+                f"{tier.display_name} doesn't have all agents access!"
+
+    def test_pricing_progression(self):
+        """التأكد من تدرج الأسعار"""
+        from config.tiers import get_tier, TierName
+        prices = [
+            get_tier(TierName.MICRO).price_monthly,
+            get_tier(TierName.STARTER).price_monthly,
+            get_tier(TierName.PRO).price_monthly,
+            get_tier(TierName.ELITE).price_monthly,
+            get_tier(TierName.WHALE).price_monthly,
+            get_tier(TierName.INSTITUTIONAL).price_monthly,
+        ]
+        # Each tier > previous
+        for i in range(1, len(prices)):
+            assert prices[i] > prices[i-1]
+
+    def test_annual_discount_around_17pct(self):
+        from config.tiers import get_tier, TierName
+        pro = get_tier(TierName.PRO)
+        discount = pro.annual_discount_pct
+        assert 15 <= discount <= 20
+
+    def test_mrr_calculation(self):
+        from config.tiers import calculate_total_mrr, TierName
+
+        result = calculate_total_mrr({
+            TierName.PRO: 100,
+            TierName.ELITE: 50,
+        })
+        assert result["mrr"] > 0
+        assert result["profit"] > 0
+        assert result["margin_pct"] > 0.4    # >40% margin
+
+    def test_target_year_one_profitable(self):
+        from config.tiers import calculate_total_mrr, TierName
+
+        target = {
+            TierName.MICRO: 500,
+            TierName.STARTER: 300,
+            TierName.PRO: 250,
+            TierName.ELITE: 100,
+            TierName.WHALE: 30,
+            TierName.INSTITUTIONAL: 10,
+            TierName.FOUNDER: 5,
+            TierName.ENTERPRISE: 2,
+        }
+        result = calculate_total_mrr(target)
+        assert result["mrr"] > 100_000      # >$100K MRR
+        assert result["margin_pct"] > 0.5    # >50% margin
+        assert result["profit"] > 50_000     # >$50K profit/mo
+
+    def test_addons_exist(self):
+        from config.tiers import ADD_ONS
+        assert len(ADD_ONS) >= 5
+        assert "training_hour" in ADD_ONS
+        assert ADD_ONS["custom_bot"].price == 1999
+
+    def test_upgrade_path(self):
+        from config.tiers import get_upgrade_path, TierName
+        assert get_upgrade_path(TierName.MICRO) == TierName.STARTER
+        assert get_upgrade_path(TierName.PRO) == TierName.ELITE
+        assert get_upgrade_path(TierName.FOUNDER) is None  # أعلى باقة
