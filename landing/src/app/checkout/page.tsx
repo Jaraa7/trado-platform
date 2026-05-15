@@ -15,13 +15,14 @@ const PLANS = {
   founder:       { name: "Founder",       price_m: 2999, price_y: null },
 };
 
-export default function CheckoutPage({
+export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: { tier?: string; billing?: string };
+  searchParams: Promise<{ tier?: string; billing?: string }>;
 }) {
-  const tier = searchParams.tier || "pro";
-  const billing = searchParams.billing || "monthly";
+  const params = await searchParams;
+  const tier = params.tier || "pro";
+  const billing = params.billing || "monthly";
   const plan = PLANS[tier as keyof typeof PLANS] || PLANS.pro;
 
   const price = billing === "annual" ? plan.price_y : plan.price_m;
