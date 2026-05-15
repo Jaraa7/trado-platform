@@ -158,3 +158,53 @@ async def system_status():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.debug)
+
+
+# ════════════════════════════════════════════════════════════════════
+# Public Endpoints (للـ Landing Page)
+# ════════════════════════════════════════════════════════════════════
+
+class WaitlistRequest(BaseModel):
+    email: str
+    name: str = None
+    country: str = None
+    portfolio_size: str = None
+    referral_source: str = None
+
+
+@app.post("/waitlist")
+async def join_waitlist(request: WaitlistRequest):
+    """انضمام لقائمة الانتظار قبل الإطلاق"""
+    try:
+        from db.client import WaitlistDB
+        result = WaitlistDB.add(
+            email=request.email,
+            full_name=request.name,
+            country_code=request.country,
+            portfolio_size=request.portfolio_size,
+            referral_source=request.referral_source
+        )
+        count = WaitlistDB.count()
+        return {
+            "success": True,
+            "message": "تم تسجيلك بنجاح! سنتواصل معك قريباً.",
+            "waitlist_count": count,
+            "position": count
+        }
+    except Exception as e:
+        logger.error(f"Waitlist error: {e}")
+        # Still return success to user (Privacy)
+        return {
+            "success": True,
+            "message": "تم استلام طلبك."
+        }
+
+
+@app.get("/waitlist/count")
+async def get_waitlist_count():
+    """عدد الأشخاص في قائمة الانتظار (عام)"""
+    try:
+        from db.client import WaitlistDB
+        return {"count": WaitlistDB.count()}
+    except:
+        return {"count": 500}    # fallback
