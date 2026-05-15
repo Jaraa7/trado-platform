@@ -1,42 +1,110 @@
 "use client";
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { getLocale, rtlLocales, translations, type Locale } from "@/lib/i18n";
-import { Check, ChevronDown, Menu, X, TrendingUp, Shield, Zap, BarChart3, Bell, Globe, ArrowRight } from "lucide-react";
+import { Check, ChevronDown, Menu, X, TrendingUp, Shield, Zap, BarChart3, Bell, Globe, ArrowRight, Star } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://trado-bot.fly.dev";
 
 const TIERS = [
-  { slug:"micro",   monthly:29,  annual:290,  popular:false },
-  { slug:"starter", monthly:59,  annual:590,  popular:false },
-  { slug:"pro",     monthly:99,  annual:990,  popular:true  },
-  { slug:"elite",   monthly:199, annual:1990, popular:false },
+  {
+    slug:"trial", price_m:0, price_y:0, popular:false, badge:"7 days free",
+    features:["3 signals/day","1 exchange","All 87 AI tools","Telegram alerts","Mobile app","No credit card"],
+  },
+  {
+    slug:"micro", price_m:29, price_y:290, popular:false, badge:null,
+    features:["5 signals/day","1 exchange","All 87 AI tools","Telegram alerts","Mobile app","Knowledge base"],
+  },
+  {
+    slug:"starter", price_m:59, price_y:590, popular:false, badge:null,
+    features:["15 signals/day","2 exchanges","Whale Tracker live","Sentiment dashboard","Limited backtesting","12h support"],
+  },
+  {
+    slug:"pro", price_m:99, price_y:990, popular:true, badge:"Most Popular",
+    features:["50 signals/day","3 exchanges","Full backtesting","Strategy builder","Portfolio manager","Weekly PDF report","1h support"],
+  },
+  {
+    slug:"elite", price_m:199, price_y:1990, popular:false, badge:null,
+    features:["150 signals/day","5 exchanges","API access","Tax reporting","Multi-portfolio","Custom risk limits","15min support"],
+  },
+  {
+    slug:"whale", price_m:499, price_y:4990, popular:false, badge:"🐋 Whale",
+    features:["Unlimited signals","10 exchanges","Dedicated account manager","Weekly strategy call","Daily reports","Early signals","Custom strategy"],
+  },
+  {
+    slug:"institutional", price_m:1499, price_y:14990, popular:false, badge:"🏛️",
+    features:["Unlimited signals","Unlimited exchanges","White-label dashboard","5 sub-accounts","99.9% SLA","Compliance reports","24/7 dedicated manager","Direct API"],
+  },
+  {
+    slug:"founder", price_m:2999, price_y:null, popular:false, badge:"👑 100 seats only",
+    features:["Everything in Institutional","Lifetime price lock","Founding member badge","Direct line to product team","Shape our roadmap","All future features free","Annual in-person summit"],
+  },
 ];
 
-const FAQS: Record<Locale, {q:string;a:string}[]> = {
+const TIER_NAMES: Record<string,Record<Locale,string>> = {
+  trial:         {en:"Trial",        ar:"تجريبي",      tr:"Deneme",      fr:"Essai",        es:"Prueba",       ru:"Пробный"},
+  micro:         {en:"Micro",        ar:"Micro",        tr:"Micro",       fr:"Micro",        es:"Micro",        ru:"Micro"},
+  starter:       {en:"Starter",      ar:"Starter",      tr:"Starter",     fr:"Starter",      es:"Starter",      ru:"Starter"},
+  pro:           {en:"Pro",          ar:"Pro",          tr:"Pro",         fr:"Pro",          es:"Pro",          ru:"Pro"},
+  elite:         {en:"Elite",        ar:"Elite",        tr:"Elite",       fr:"Elite",        es:"Elite",        ru:"Elite"},
+  whale:         {en:"Whale",        ar:"Whale",        tr:"Whale",       fr:"Whale",        es:"Whale",        ru:"Whale"},
+  institutional: {en:"Institutional",ar:"Institutional",tr:"Kurumsal",    fr:"Institutionnel",es:"Institucional",ru:"Институциональный"},
+  founder:       {en:"Founder",      ar:"Founder",      tr:"Kurucu",      fr:"Fondateur",    es:"Fundador",     ru:"Основатель"},
+};
+
+const FAQS: Record<Locale,{q:string;a:string}[]> = {
   en:[
-    {q:"Do I need trading experience?",a:"No. Our 87 AI tools guide you at every step, from understanding signals to managing risk."},
+    {q:"Do I need trading experience?",a:"No. Our 87 AI tools guide you at every step, from understanding signals to managing risk. Beginners and professionals both benefit equally."},
     {q:"Is my capital safe? Can you withdraw it?",a:"Never. We only request read and trade API permissions. Withdrawal permission is never requested. Your funds stay on your exchange at all times."},
-    {q:"What makes TradoAI different?",a:"Unlike rule-based bots, our 87 AI tools reason like professional analysts — reading news, understanding context, and finding opportunities others miss."},
-    {q:"Can I cancel anytime?",a:"Yes. Cancel instantly, no questions asked. Full refund within 14 days if under 50% signals used."},
-    {q:"How accurate are the signals?",a:"Our multi-timeframe confirmation system significantly reduces false signals. Every signal includes confidence score and full risk metrics."},
+    {q:"What makes TradoAI different?",a:"Unlike rule-based bots, our 87 AI tools reason like professional analysts — reading news, understanding context, and finding opportunities others miss. They work as a coordinated team, 24/7."},
+    {q:"Can I cancel anytime?",a:"Yes. Cancel instantly, no questions asked. Full refund within 14 days if you used less than 50% of your signals."},
+    {q:"How accurate are the signals?",a:"Our multi-timeframe confirmation system significantly reduces false signals. Every signal includes a confidence score, risk metrics, and full AI reasoning."},
+    {q:"What is the Founder tier?",a:"Only 100 seats ever. Founders lock in today's price forever, shape the product roadmap, and get every future feature at no extra cost. Once full, it's gone."},
   ],
   ar:[
-    {q:"هل أحتاج خبرة في التداول؟",a:"لا. 87 أداة AI ترشدك في كل خطوة، من فهم الإشارات إلى إدارة المخاطر."},
+    {q:"هل أحتاج خبرة في التداول؟",a:"لا. 87 أداة AI ترشدك في كل خطوة، من فهم الإشارات إلى إدارة المخاطر. المبتدئون والمحترفون يستفيدون على حد سواء."},
     {q:"هل رأس مالي آمن؟",a:"نطلب فقط صلاحية القراءة والتداول. صلاحية السحب غير مطلوبة إطلاقاً. أموالك تبقى على منصتك في جميع الأوقات."},
-    {q:"ما الذي يميز TradoAI؟",a:"87 أداة AI تفكر كمحللين محترفين — تقرأ الأخبار، تفهم السياق، وتجد الفرص التي يغفلها الآخرون."},
+    {q:"ما الذي يميز TradoAI؟",a:"على عكس البوتات العادية، 87 أداة AI لدينا تفكر كمحللين محترفين — تقرأ الأخبار، تفهم السياق، وتجد الفرص التي يغفلها الآخرون. تعمل كفريق متناسق 24/7."},
     {q:"هل يمكنني الإلغاء في أي وقت؟",a:"نعم. الإلغاء فوري بدون أسئلة. استرداد كامل خلال 14 يوم إذا استخدمت أقل من 50% من الإشارات."},
-    {q:"ما دقة الإشارات؟",a:"نظام تأكيد متعدد الإطارات الزمنية يقلل الإشارات الخاطئة بشكل كبير. كل إشارة تتضمن درجة الثقة ومقاييس المخاطر الكاملة."},
+    {q:"ما دقة الإشارات؟",a:"نظام تأكيد متعدد الإطارات يقلل الإشارات الخاطئة بشكل كبير. كل إشارة تتضمن درجة الثقة، مقاييس المخاطر، والتحليل الكامل للـ AI."},
+    {q:"ما هي باقة Founder؟",a:"100 مقعد فقط للأبد. يثبّت المؤسسون سعر اليوم إلى الأبد، يشكّلون خارطة طريق المنتج، ويحصلون على كل الميزات المستقبلية بدون تكلفة إضافية. عندما تمتلئ، لن تعود."},
   ],
-  tr:[{q:"Deneyim gerekiyor mu?",a:"Hayır. 87 AI aracımız her adımda rehberlik eder."},{q:"Sermayem güvende mi?",a:"Asla para çekme izni istemiyoruz. Fonlarınız her zaman borsanızda kalır."},{q:"TradoAI'yi farklı kılan nedir?",a:"87 AI aracımız profesyonel analistler gibi düşünür."},{q:"İstediğimde iptal edebilir miyim?",a:"Evet, anında iptal."},{q:"Sinyaller ne kadar doğru?",a:"Çok zaman dilimli sistem yanlış sinyalleri önemli ölçüde azaltır."}],
-  fr:[{q:"Ai-je besoin d'expérience?",a:"Non. Nos 87 outils IA vous guident à chaque étape."},{q:"Mon capital est-il sécurisé?",a:"Jamais de permission de retrait. Vos fonds restent sur votre exchange."},{q:"Qu'est-ce qui différencie TradoAI?",a:"87 outils IA pensent comme des analystes professionnels."},{q:"Puis-je annuler à tout moment?",a:"Oui, annulation instantanée."},{q:"Quelle est la précision?",a:"Notre système multi-temporel réduit significativement les faux signaux."}],
-  es:[{q:"¿Necesito experiencia?",a:"No. Nuestras 87 herramientas IA te guían en cada paso."},{q:"¿Mi capital está seguro?",a:"Nunca solicitamos permiso de retiro."},{q:"¿Qué diferencia a TradoAI?",a:"87 herramientas IA piensan como analistas profesionales."},{q:"¿Puedo cancelar?",a:"Sí, cancelación instantánea."},{q:"¿Qué tan precisas son las señales?",a:"Nuestro sistema multi-temporal reduce los falsos sinyales."}],
-  ru:[{q:"Нужен ли опыт?",a:"Нет. 87 инструментов ИИ направляют вас на каждом шагу."},{q:"Мой капитал в безопасности?",a:"Мы никогда не запрашиваем разрешение на вывод средств."},{q:"Чем отличается TradoAI?",a:"87 инструментов ИИ мыслят как профессиональные аналитики."},{q:"Могу отменить?",a:"Да, мгновенная отмена."},{q:"Точность сигналов?",a:"Многотаймфреймная система значительно снижает ложные сигналы."}],
+  tr:[
+    {q:"Deneyim gerekiyor mu?",a:"Hayır. 87 AI aracımız her adımda size rehberlik eder."},
+    {q:"Sermayem güvende mi?",a:"Asla para çekme izni istemiyoruz. Fonlarınız her zaman borsanızda kalır."},
+    {q:"TradoAI'yi farklı kılan nedir?",a:"87 AI aracımız profesyonel analistler gibi düşünür — haberleri okur, bağlamı anlar, fırsatları bulur."},
+    {q:"İstediğimde iptal edebilir miyim?",a:"Evet, anında iptal. 14 gün içinde tam iade."},
+    {q:"Sinyaller ne kadar doğru?",a:"Çok zaman dilimli sistem yanlış sinyalleri önemli ölçüde azaltır."},
+    {q:"Founder nedir?",a:"Sadece 100 koltuk. Fiyatı sonsuza kadar sabitler ve tüm gelecek özellikleri ücretsiz alırsınız."},
+  ],
+  fr:[
+    {q:"Ai-je besoin d'expérience?",a:"Non. Nos 87 outils IA vous guident à chaque étape."},
+    {q:"Mon capital est-il sécurisé?",a:"Jamais de permission de retrait. Vos fonds restent sur votre exchange."},
+    {q:"Qu'est-ce qui différencie TradoAI?",a:"87 outils IA pensent comme des analystes professionnels, 24/7."},
+    {q:"Puis-je annuler à tout moment?",a:"Oui, annulation instantanée et remboursement sous 14 jours."},
+    {q:"Quelle est la précision?",a:"Notre système multi-temporel réduit significativement les faux signaux."},
+    {q:"Qu'est-ce que Founder?",a:"100 sièges seulement. Prix bloqué à vie et toutes les futures fonctionnalités gratuites."},
+  ],
+  es:[
+    {q:"¿Necesito experiencia?",a:"No. Nuestras 87 herramientas IA te guían en cada paso."},
+    {q:"¿Mi capital está seguro?",a:"Nunca solicitamos permiso de retiro. Tus fondos permanecen en tu exchange."},
+    {q:"¿Qué diferencia a TradoAI?",a:"87 herramientas IA piensan como analistas profesionales, 24/7."},
+    {q:"¿Puedo cancelar?",a:"Sí, cancelación instantánea y reembolso en 14 días."},
+    {q:"¿Qué tan precisas son las señales?",a:"Nuestro sistema multi-temporal reduce significativamente las señales falsas."},
+    {q:"¿Qué es Founder?",a:"Solo 100 asientos. Precio bloqueado de por vida y todas las funciones futuras gratis."},
+  ],
+  ru:[
+    {q:"Нужен ли опыт?",a:"Нет. 87 инструментов ИИ направляют вас на каждом шагу."},
+    {q:"Мой капитал в безопасности?",a:"Мы никогда не запрашиваем разрешение на вывод. Ваши средства остаются на бирже."},
+    {q:"Чем отличается TradoAI?",a:"87 инструментов ИИ мыслят как профессиональные аналитики, 24/7."},
+    {q:"Могу отменить?",a:"Да, мгновенная отмена и возврат в течение 14 дней."},
+    {q:"Точность сигналов?",a:"Многотаймфреймная система значительно снижает ложные сигналы."},
+    {q:"Что такое Founder?",a:"Только 100 мест. Цена зафиксирована навсегда, все будущие функции бесплатно."},
+  ],
 };
 
 export default function HomePage() {
-  const [locale, setLocale] = useState<Locale>("en");
-  const [dir, setDir]   = useState<"ltr"|"rtl">("ltr");
+  const [locale, setLocale]   = useState<Locale>("en");
+  const [dir, setDir]         = useState<"ltr"|"rtl">("ltr");
   const [annual, setAnnual]   = useState(false);
   const [openFaq, setOpenFaq] = useState<number|null>(0);
   const [email, setEmail]     = useState("");
@@ -44,45 +112,37 @@ export default function HomePage() {
   const [menuOpen, setMenuOpen]   = useState(false);
   const [scrolled, setScrolled]   = useState(false);
 
-  const t = (k: string) => translations[locale]?.[k] ?? translations.en[k] ?? k;
+  const t = (k:string) => translations[locale]?.[k] ?? translations.en[k] ?? k;
 
-  useEffect(() => {
-    const l = getLocale(navigator.language || "en");
+  useEffect(()=>{
+    const l = getLocale(navigator.language||"en");
     setLocale(l);
     const isRtl = rtlLocales.includes(l);
-    setDir(isRtl ? "rtl" : "ltr");
-    document.documentElement.dir  = isRtl ? "rtl" : "ltr";
+    setDir(isRtl?"rtl":"ltr");
+    document.documentElement.dir  = isRtl?"rtl":"ltr";
     document.documentElement.lang = l;
-  }, []);
+  },[]);
 
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 30);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+  useEffect(()=>{
+    const fn = ()=>setScrolled(window.scrollY>30);
+    window.addEventListener("scroll",fn);
+    return ()=>window.removeEventListener("scroll",fn);
+  },[]);
 
-  const handleWaitlist = async (e: React.FormEvent) => {
+  const handleWaitlist = async (e:React.FormEvent)=>{
     e.preventDefault();
-    if (!email.includes("@")) return;
+    if(!email.includes("@")) return;
     setSubmitted(true);
-    try { await fetch(`${API}/waitlist`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})}); } catch {}
+    try{ await fetch(`${API}/waitlist`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})}); }catch{}
   };
 
   const features = [
-    {icon:Zap,       title:t("f1_title"), desc:t("f1_desc")},
-    {icon:Shield,    title:t("f2_title"), desc:t("f2_desc")},
-    {icon:TrendingUp,title:t("f3_title"), desc:t("f3_desc")},
-    {icon:BarChart3, title:t("f4_title"), desc:t("f4_desc")},
-    {icon:Bell,      title:t("f5_title"), desc:t("f5_desc")},
-    {icon:Globe,     title:t("f6_title"), desc:t("f6_desc")},
-  ];
-
-  const tierNames: Record<string,string> = {micro:"Micro",starter:"Starter",pro:"Pro",elite:"Elite"};
-  const tierFeatures = [
-    [t("f1_title"),"1 exchange","Telegram","Mobile app"],
-    ["15 signals/day","2 exchanges","Whale tracker","12h support"],
-    ["50 signals/day","3 exchanges","Backtesting","Strategy builder","1h support"],
-    ["Unlimited","5 exchanges","Tax reporting","API access","15min support"],
+    {icon:Zap,       title:t("f1_title"),desc:t("f1_desc")},
+    {icon:Shield,    title:t("f2_title"),desc:t("f2_desc")},
+    {icon:TrendingUp,title:t("f3_title"),desc:t("f3_desc")},
+    {icon:BarChart3, title:t("f4_title"),desc:t("f4_desc")},
+    {icon:Bell,      title:t("f5_title"),desc:t("f5_desc")},
+    {icon:Globe,     title:t("f6_title"),desc:t("f6_desc")},
   ];
 
   return (
@@ -92,7 +152,23 @@ export default function HomePage() {
       <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${scrolled?"bg-[#050810]/90 backdrop-blur-xl border-b border-white/5":""}`}>
         <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="TradoAI" width={38} height={38} className="rounded-xl"/>
+            <svg width="36" height="36" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="lg1" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#0ea5e9"/>
+                  <stop offset="100%" stopColor="#10b981"/>
+                </linearGradient>
+              </defs>
+              <polygon points="60,8 110,100 10,100" fill="none" stroke="url(#lg1)" strokeWidth="6" strokeLinejoin="round"/>
+              <circle cx="60" cy="52" r="12" fill="none" stroke="url(#lg1)" strokeWidth="3"/>
+              <line x1="60" y1="28" x2="60" y2="40" stroke="url(#lg1)" strokeWidth="2.5"/>
+              <line x1="48" y1="62" x2="38" y2="76" stroke="url(#lg1)" strokeWidth="2.5"/>
+              <line x1="72" y1="62" x2="82" y2="76" stroke="url(#lg1)" strokeWidth="2.5"/>
+              <circle cx="60" cy="52" r="4" fill="url(#lg1)"/>
+              <circle cx="60" cy="24" r="3" fill="#10b981"/>
+              <circle cx="35" cy="80" r="3" fill="#0ea5e9"/>
+              <circle cx="85" cy="80" r="3" fill="#0ea5e9"/>
+            </svg>
             <span className="font-display text-xl font-bold tracking-tight">Trado<span className="grad">AI</span></span>
           </a>
           <div className="hidden md:flex items-center gap-8">
@@ -111,7 +187,7 @@ export default function HomePage() {
         {menuOpen&&(
           <div className="md:hidden bg-[#080d1a] border-t border-white/5 px-6 py-4 space-y-3">
             {["features","pricing","faq"].map(k=>(
-              <a key={k} href={`#${k}`} onClick={()=>setMenuOpen(false)} className="block py-2 text-white/70">{t(`nav_${k}`)}</a>
+              <a key={k} href={`#${k}`} onClick={()=>setMenuOpen(false)} className="block py-2 text-white/60">{t(`nav_${k}`)}</a>
             ))}
             <a href="#waitlist" onClick={()=>setMenuOpen(false)} className="btn-primary block text-center py-3 mt-2"><span>{t("nav_cta")}</span></a>
           </div>
@@ -199,7 +275,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* AGENTS */}
+      {/* AI TOOLS */}
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-xs font-mono text-blue-400 mb-3 tracking-widest uppercase">AI Power</p>
@@ -220,7 +296,7 @@ export default function HomePage() {
 
       {/* PRICING */}
       <section id="pricing" className="py-24 px-6 bg-gradient-to-b from-transparent via-emerald-950/8 to-transparent">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-xs font-mono text-emerald-400 mb-3 tracking-widest uppercase">Pricing</p>
             <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">{t("pricing_title")}</h2>
@@ -232,25 +308,30 @@ export default function HomePage() {
               </button>
             </div>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TIERS.map((tier,i)=>{
-              const price = annual?Math.floor(tier.annual/12):tier.monthly;
+
+          {/* Row 1: Trial + Micro + Starter + Pro */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {TIERS.slice(0,4).map(tier=>{
+              const monthlyPrice = annual && tier.price_y ? Math.floor(tier.price_y/12) : tier.price_m;
               return(
                 <div key={tier.slug} className={`relative rounded-2xl p-6 transition ${tier.popular?"border border-blue-500/40 bg-gradient-to-b from-blue-950/50 to-[#0d1526]":"glass"}`}>
-                  {tier.popular&&<div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 text-xs font-bold text-white whitespace-nowrap">Most Popular</div>}
-                  <h3 className="font-display text-lg font-bold mb-3">{tierNames[tier.slug]}</h3>
+                  {tier.badge&&<div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${tier.popular?"bg-gradient-to-r from-blue-500 to-emerald-500 text-white":"bg-white/10 text-white/70"}`}>{tier.badge}</div>}
+                  <h3 className="font-display text-lg font-bold mb-3 mt-2">{TIER_NAMES[tier.slug][locale]}</h3>
                   <div className="flex items-baseline gap-1 mb-5">
-                    <span className="text-3xl font-bold font-mono">${price}</span>
-                    <span className="text-white/35 text-sm">{t("pricing_mo")}</span>
+                    {tier.price_m===0
+                      ? <span className="text-3xl font-bold font-mono grad">Free</span>
+                      : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
+                    }
                   </div>
-                  <a href={`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
+                  {annual && tier.price_y && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_y}/yr</p>}
+                  <a href={tier.price_m===0?"/signup":`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
                      className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${tier.popular?"btn-primary":"btn-ghost"}`}>
-                    <span>{t("pricing_cta")}</span>
+                    <span>{tier.price_m===0?"Start Free":t("pricing_cta")}</span>
                   </a>
                   <ul className="space-y-2">
-                    {tierFeatures[i].map((f:string)=>(
+                    {tier.features.map(f=>(
                       <li key={f} className="flex items-start gap-2 text-xs">
-                        <Check size={13} className="text-emerald-400 mt-0.5 shrink-0"/>
+                        <Check size={12} className="text-emerald-400 mt-0.5 shrink-0"/>
                         <span className="text-white/50">{f}</span>
                       </li>
                     ))}
@@ -259,14 +340,42 @@ export default function HomePage() {
               );
             })}
           </div>
-          <div className="mt-5 grid md:grid-cols-2 gap-4 max-w-xl mx-auto">
-            {[{n:"Whale",p:"$499/mo",s:"$50K–$5M"},{n:"Institutional",p:"$1,499/mo",s:"Funds & institutions"}].map(x=>(
-              <div key={x.n} className="glass rounded-xl p-5 text-center hover:border-white/15 transition">
-                <p className="font-display font-bold mb-1">{x.n}</p>
-                <p className="text-white/35 text-xs mb-2">{x.s}</p>
-                <p className="font-mono text-blue-400 font-semibold text-sm">{x.p}</p>
-              </div>
-            ))}
+
+          {/* Row 2: Elite + Whale + Institutional + Founder */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TIERS.slice(4).map(tier=>{
+              const monthlyPrice = annual && tier.price_y ? Math.floor(tier.price_y/12) : tier.price_m;
+              const isFounder = tier.slug==="founder";
+              const isInstitutional = tier.slug==="institutional";
+              return(
+                <div key={tier.slug} className={`relative rounded-2xl p-6 transition ${isFounder?"border border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-[#0d1526]":isInstitutional?"border border-violet-500/30 bg-gradient-to-b from-violet-950/20 to-[#0d1526]":"glass"}`}>
+                  {tier.badge&&<div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isFounder?"bg-gradient-to-r from-amber-500 to-yellow-400 text-black":isInstitutional?"bg-gradient-to-r from-violet-500 to-blue-500 text-white":"bg-white/10 text-white/70"}`}>{tier.badge}</div>}
+                  <h3 className={`font-display text-lg font-bold mb-3 mt-2 ${isFounder?"grad-gold":""}`}>{TIER_NAMES[tier.slug][locale]}</h3>
+                  <div className="flex items-baseline gap-1 mb-5">
+                    {isFounder&&!annual
+                      ? <><span className="text-3xl font-bold font-mono grad-gold">${tier.price_m}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
+                      : tier.price_y===null
+                      ? <span className="text-3xl font-bold font-mono grad-gold">${tier.price_m}<span className="text-white/35 text-sm text-base font-normal">{t("pricing_mo")}</span></span>
+                      : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
+                    }
+                  </div>
+                  {annual && tier.price_y && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_y}/yr</p>}
+                  {tier.slug==="founder"&&<p className="text-amber-400/70 text-xs -mt-3 mb-4">Annual billing only</p>}
+                  <a href={`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
+                     className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${isFounder?"bg-gradient-to-r from-amber-500 to-yellow-400 text-black hover:opacity-90":isInstitutional?"bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:opacity-90":"btn-ghost"}`}>
+                    <span className="flex items-center justify-center gap-2">{isFounder&&<Star size={14} fill="currentColor"/>}{t("pricing_cta")}</span>
+                  </a>
+                  <ul className="space-y-2">
+                    {tier.features.map(f=>(
+                      <li key={f} className="flex items-start gap-2 text-xs">
+                        <Check size={12} className={`mt-0.5 shrink-0 ${isFounder?"text-amber-400":isInstitutional?"text-violet-400":"text-emerald-400"}`}/>
+                        <span className="text-white/50">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -318,17 +427,22 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row justify-between gap-8 mb-10">
             <div className="max-w-xs">
               <div className="flex items-center gap-3 mb-4">
-                <Image src="/logo.png" alt="TradoAI" width={34} height={34} className="rounded-xl"/>
+                <svg width="32" height="32" viewBox="0 0 120 120">
+                  <defs><linearGradient id="flg" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#0ea5e9"/><stop offset="100%" stopColor="#10b981"/></linearGradient></defs>
+                  <polygon points="60,8 110,100 10,100" fill="none" stroke="url(#flg)" strokeWidth="6" strokeLinejoin="round"/>
+                  <circle cx="60" cy="52" r="12" fill="none" stroke="url(#flg)" strokeWidth="3"/>
+                  <circle cx="60" cy="52" r="4" fill="url(#flg)"/>
+                </svg>
                 <span className="font-display text-xl font-bold">Trado<span className="grad">AI</span></span>
               </div>
               <p className="text-white/35 text-xs leading-relaxed">87 specialized AI tools working together to give you a decisive edge in financial markets.</p>
             </div>
             <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-white/35">
               <a href="#features" className="hover:text-white transition">{t("nav_features")}</a>
-              <a href="/privacy" className="hover:text-white transition">Privacy</a>
-              <a href="#pricing" className="hover:text-white transition">{t("nav_pricing")}</a>
-              <a href="/terms" className="hover:text-white transition">Terms</a>
-              <a href="#faq" className="hover:text-white transition">{t("nav_faq")}</a>
+              <a href="/privacy"  className="hover:text-white transition">Privacy</a>
+              <a href="#pricing"  className="hover:text-white transition">{t("nav_pricing")}</a>
+              <a href="/terms"    className="hover:text-white transition">Terms</a>
+              <a href="#faq"      className="hover:text-white transition">{t("nav_faq")}</a>
               <a href="mailto:hello@tradoai.net" className="hover:text-white transition">Contact</a>
             </div>
           </div>
