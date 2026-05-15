@@ -77,6 +77,14 @@ class RiskGuardian(BaseAgent):
 
     def calculate_position_size(self, proposal: TradeProposal) -> RiskDecision:
         """حساب حجم الصفقة الصحيح"""
+        # 🆕 فحص أولي: لا يمكن التداول برصيد صفر
+        if proposal.account_balance <= 0:
+            return RiskDecision(
+                approved=False,
+                reason=f"الرصيد {proposal.account_balance} USDT — لا يمكن التداول بدون رصيد",
+                veto_applied=True
+            )
+
         if proposal.entry_price <= 0 or proposal.stop_loss <= 0:
             return RiskDecision(
                 approved=False,

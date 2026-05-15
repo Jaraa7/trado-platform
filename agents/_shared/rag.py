@@ -113,13 +113,16 @@ class RAGSystem:
 
         try:
             query_vector = embedder.encode(query).tolist()
-            results = client.search(
+            # Qdrant v1.10+ uses query_points instead of deprecated search()
+            results = client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,
                 limit=top_k,
                 score_threshold=0.5
             )
-            return [r.payload["text"] for r in results]
+            # query_points returns QueryResponse, points are in .points attribute
+            points = results.points if hasattr(results, "points") else results
+            return [p.payload["text"] for p in points if p.payload]
         except Exception as e:
             logger.error(f"RAG retrieval error: {e}")
             return []

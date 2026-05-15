@@ -254,12 +254,38 @@ async def main():
     if not ok:
         return
 
+    # 🆕 تنبيه لو الرصيد صفر
+    if balance <= 0:
+        print()
+        print("  ⚠️" + "═" * 65)
+        print("  ⚠️  الرصيد $0 — احصل على Test USDT أولاً!")
+        print("  ⚠️" + "═" * 65)
+        print()
+        print("  📋 خطوات الحصول على Test USDT:")
+        print("  1. افتح: https://testnet.bybit.com")
+        print("  2. سجّل دخول بنفس الحساب")
+        print("  3. اذهب إلى: Assets → Request Test Funds")
+        print("  4. اطلب: 100,000 USDT (مجاناً، لاختبار)")
+        print("  5. أعد تشغيل هذا السكريبت")
+        print()
+        print("  💡 سنكمل بدون تنفيذ صفقات — لاختبار التحليل فقط")
+        print()
+
     ok, price, vol_ratio, ohlcv = await test_step_2_market_data()
     if not ok:
         return
 
     ok, analysis = await test_step_3_ai_analysis(price, vol_ratio)
     if not ok:
+        return
+
+    # تخطي Risk + Execute لو الرصيد صفر
+    if balance <= 0:
+        print()
+        print("═" * 70)
+        print("  ✅ اختبار جزئي اكتمل (التحليل يعمل)")
+        print("  📝 لتجربة Risk Guardian + التنفيذ، احصل على Test USDT")
+        print("═" * 70)
         return
 
     decision = await test_step_4_risk_check(price, balance)

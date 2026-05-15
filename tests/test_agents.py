@@ -576,3 +576,51 @@ class TestConcentrationRisk:
         if decision.approved:
             # يجب الـ cap عند 30%
             assert decision.recommended_size <= 3000
+
+
+# ── Real-World Bug Fixes Tests ────────────────────────────────────────────────
+
+class TestZeroBalanceBugFix:
+    """اختبار الـ bug المُكتشف من التشغيل الفعلي"""
+
+    def _make_guardian(self):
+        from agents.trading.risk_guardian.agent import RiskGuardian
+        g = RiskGuardian.__new__(RiskGuardian)
+        g.user_id = "test"
+        g.AGENT_ID = "risk_guardian"
+        g.MAX_RISK_PER_TRADE = 0.02
+        g.MAX_DAILY_LOSS = 0.06
+        g.MAX_DRAWDOWN = 0.15
+        g.MAX_LEVERAGE = 3
+        g.MIN_RISK_REWARD = 1.5
+        g.MAX_POSITION_CONCENTRATION = 0.30
+        return g
+
+    def test_zero_balance_rejected_no_crash(self):
+        """الـ bug الذي اكتشفناه: ZeroDivisionError when balance=0"""
+        from agents.trading.risk_guardian.agent import TradeProposal
+
+        guardian = self._make_guardian()
+        proposal = TradeProposal(
+            symbol="BTC/USDT", direction="long",
+            entry_price=102142, stop_loss=99078, take_profit=108270,
+            account_balance=0,    # 🎯 الـ bug
+            leverage=1
+        )
+        # يجب ألا يتسبب في ZeroDivisionError
+        decision = guardian.calculate_position_size(proposal)
+        assert decision.approved is False
+        assert decision.veto_applied is True
+        assert "رصيد" in decision.reason or "0" in decision.reason
+
+    def test_negative_balance_rejected(self):
+        from agents.trading.risk_guardian.agent import TradeProposal
+        guardian = self._make_guardian()
+        proposal = TradeProposal(
+            symbol="BTC/USDT", direction="long",
+            entry_price=50000, stop_loss=48500, take_profit=53000,
+            account_balance=-100,    # سالب
+            leverage=1
+        )
+        decision = guardian.calculate_position_size(proposal)
+        assert decision.approved is False
