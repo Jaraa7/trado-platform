@@ -2,31 +2,21 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TradoAI — منصة التداول الذكي بالـ AI",
-  description: "87 وكيل ذكي يعملون 24/7 لمساعدتك في التداول. تحليل عميق، إشارات دقيقة، إدارة مخاطر احترافية للمتداول العربي.",
-  keywords: ["AI trading", "تداول بالذكاء الاصطناعي", "crypto", "TradoAI", "تحليل تقني"],
-  authors: [{ name: "TradoAI" }],
+  title: "TradoAI — Trading Intelligence Beyond Limits",
+  description: "87 specialized AI tools working 24/7 to analyze markets, find opportunities, and protect your capital.",
   openGraph: {
-    title: "TradoAI — منصة التداول الذكي",
-    description: "AI Trading Platform مع 87 وكيل ذكي",
+    title: "TradoAI",
+    description: "87 AI tools. One platform.",
     url: "https://tradoai.net",
     siteName: "TradoAI",
-    locale: "ar_KW",
     type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "TradoAI",
-    description: "AI Trading Platform",
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
-      <body>
-        <div className="grain">{children}</div>
-      </body>
+    <html suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
