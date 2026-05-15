@@ -286,25 +286,27 @@ export default function HomePage() {
 
           {/* Row 1: Trial + Micro + Starter + Pro */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {TIER_ROW_1.map(slugKey=>{const tier=TIER_CONFIGS[slugKey];
-              const monthlyPrice = annual && tier.price_y ? Math.floor((tier.price_annual||0)/12) : tier.price_monthly;
+            {TIER_ROW_1.map(slugKey=>{
+              const tier=TIER_CONFIGS[slugKey];
+              const monthlyPrice = annual && tier.price_annual ? Math.floor(tier.price_annual/12) : tier.price_monthly;
+              const featureList = tier.highlights[locale] ?? tier.highlights["en"] ?? [];
               return(
                 <div key={tier.slug} className={`relative rounded-2xl p-6 transition ${tier.popular?"border border-blue-500/40 bg-gradient-to-b from-blue-950/50 to-[#0d1526]":"glass"}`}>
                   {tier.badge&&<div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${tier.popular?"bg-gradient-to-r from-blue-500 to-emerald-500 text-white":"bg-white/10 text-white/70"}`}>{tier.badge}</div>}
-                  <h3 className="font-display text-lg font-bold mb-3 mt-2">{TIER_NAMES[tier.slug][locale]}</h3>
+                  <h3 className="font-display text-lg font-bold mb-3 mt-2">{TIER_NAMES[tier.slug]?.[locale] ?? tier.name}</h3>
                   <div className="flex items-baseline gap-1 mb-5">
-                    {tier.price_monthlyonthly===0
+                    {tier.price_monthly===0
                       ? <span className="text-3xl font-bold font-mono grad">Free</span>
                       : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
                     }
                   </div>
                   {annual && tier.price_annual && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_annual}/yr</p>}
-                  <a href={tier.price_monthlyonthly===0?"/signup":`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
+                  <a href={tier.price_monthly===0?"/signup":`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
                      className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${tier.popular?"btn-primary":"btn-ghost"}`}>
-                    <span>{tier.price_monthlyonthly===0?"Start Free":t("pricing_cta")}</span>
+                    <span>{tier.price_monthly===0?"Start Free":t("pricing_cta")}</span>
                   </a>
                   <ul className="space-y-2">
-                    {tier.features.map(f=>(
+                    {featureList.map((f:string)=>(
                       <li key={f} className="flex items-start gap-2 text-xs">
                         <Check size={12} className="text-emerald-400 mt-0.5 shrink-0"/>
                         <span className="text-white/50">{f}</span>
@@ -318,30 +320,32 @@ export default function HomePage() {
 
           {/* Row 2: Elite + Whale + Institutional + Founder */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TIER_ROW_2.map(slugKey=>{const tier=TIER_CONFIGS[slugKey];
-              const monthlyPrice = annual && tier.price_y ? Math.floor((tier.price_annual||0)/12) : tier.price_monthly;
+            {TIER_ROW_2.map(slugKey=>{
+              const tier=TIER_CONFIGS[slugKey];
+              const monthlyPrice = annual && tier.price_annual ? Math.floor(tier.price_annual/12) : tier.price_monthly;
               const isFounder = tier.slug==="founder";
               const isInstitutional = tier.slug==="institutional";
+              const featureList = tier.highlights[locale] ?? tier.highlights["en"] ?? [];
               return(
                 <div key={tier.slug} className={`relative rounded-2xl p-6 transition ${isFounder?"border border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-[#0d1526]":isInstitutional?"border border-violet-500/30 bg-gradient-to-b from-violet-950/20 to-[#0d1526]":"glass"}`}>
                   {tier.badge&&<div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${isFounder?"bg-gradient-to-r from-amber-500 to-yellow-400 text-black":isInstitutional?"bg-gradient-to-r from-violet-500 to-blue-500 text-white":"bg-white/10 text-white/70"}`}>{tier.badge}</div>}
-                  <h3 className={`font-display text-lg font-bold mb-3 mt-2 ${isFounder?"grad-gold":""}`}>{TIER_NAMES[tier.slug][locale]}</h3>
+                  <h3 className={`font-display text-lg font-bold mb-3 mt-2 ${isFounder?"grad-gold":""}`}>{TIER_NAMES[tier.slug]?.[locale] ?? tier.name}</h3>
                   <div className="flex items-baseline gap-1 mb-5">
                     {isFounder&&!annual
                       ? <><span className="text-3xl font-bold font-mono grad-gold">${tier.price_monthly}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
-                      : tier.price_y===null
-                      ? <span className="text-3xl font-bold font-mono grad-gold">${tier.price_monthly}<span className="text-white/35 text-sm text-base font-normal">{t("pricing_mo")}</span></span>
+                      : tier.price_annual===null
+                      ? <span className="text-3xl font-bold font-mono grad-gold">${tier.price_monthly}<span className="text-white/35 text-sm text-base font-normal"> {t("pricing_mo")}</span></span>
                       : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
                     }
                   </div>
                   {annual && tier.price_annual && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_annual}/yr</p>}
-                  {tier.slug==="founder"&&<p className="text-amber-400/70 text-xs -mt-3 mb-4">Annual billing only</p>}
+                  {isFounder&&<p className="text-amber-400/70 text-xs -mt-3 mb-4">Annual billing only</p>}
                   <a href={`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
                      className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${isFounder?"bg-gradient-to-r from-amber-500 to-yellow-400 text-black hover:opacity-90":isInstitutional?"bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:opacity-90":"btn-ghost"}`}>
                     <span className="flex items-center justify-center gap-2">{isFounder&&<Star size={14} fill="currentColor"/>}{t("pricing_cta")}</span>
                   </a>
                   <ul className="space-y-2">
-                    {tier.features.map(f=>(
+                    {featureList.map((f:string)=>(
                       <li key={f} className="flex items-start gap-2 text-xs">
                         <Check size={12} className={`mt-0.5 shrink-0 ${isFounder?"text-amber-400":isInstitutional?"text-violet-400":"text-emerald-400"}`}/>
                         <span className="text-white/50">{f}</span>
