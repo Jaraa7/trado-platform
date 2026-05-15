@@ -1,5 +1,5 @@
 """
-🔍 فحص جميع حسابات Bybit Testnet
+🔍 فحص شامل لـ Bybit Testnet
 """
 import asyncio
 import os
@@ -8,10 +8,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-async def check_all_accounts():
+async def main():
     import ccxt.async_support as ccxt
 
-    print("🔍 فحص جميع حسابات Bybit Testnet")
+    print("🔍 فحص شامل لـ Bybit Testnet")
     print("=" * 60)
 
     exchange = ccxt.bybit({
@@ -21,65 +21,67 @@ async def check_all_accounts():
     })
     exchange.set_sandbox_mode(True)
 
-    account_types = ["UNIFIED", "CONTRACT", "SPOT", "FUND", "OPTION"]
-
-    for acc_type in account_types:
-        print(f"\n📊 الحساب: {acc_type}")
-        print("-" * 60)
-        try:
-            result = await exchange.private_get_v5_account_wallet_balance({
-                "accountType": acc_type
-            })
-
-            if result.get("retCode") == 0:
-                lists = result["result"].get("list", [])
-                if not lists:
-                    print("   (فارغ)")
-                    continue
-
-                for account in lists:
-                    coins = account.get("coin", [])
-                    found = False
-                    for coin in coins:
-                        wallet_bal = float(coin.get("walletBalance", 0) or 0)
-                        if wallet_bal > 0:
-                            print(f"   ✅ {coin['coin']}: {wallet_bal:,.4f}")
-                            usd_val = float(coin.get("usdValue", 0) or 0)
-                            if usd_val > 0:
-                                print(f"      قيمة بالدولار: ${usd_val:,.2f}")
-                            found = True
-
-                    total = account.get("totalEquity", "0")
-                    if total and float(total) > 0:
-                        print(f"   💰 إجمالي الحساب: ${float(total):,.2f}")
-                        found = True
-
-                    if not found:
-                        print("   (فارغ)")
-            else:
-                print(f"   ⚠️  {result.get('retMsg')}")
-        except Exception as e:
-            err = str(e)[:100]
-            print(f"   ❌ خطأ: {err}")
-
-    # محاولة عبر CCXT العادية
-    print("\n\n📊 عبر CCXT (Spot default):")
+    # ───────────────────────────────────────────────────────────
+    # 1. الـ UNIFIED account (الرئيسي)
+    # ───────────────────────────────────────────────────────────
+    print("\n📊 1️⃣ UNIFIED Account (التداول الموحد)")
     print("-" * 60)
     try:
-        bal = await exchange.fetch_balance()
-        non_zero = {k: v for k, v in bal.get("total", {}).items() if v and v > 0}
-        if non_zero:
-            for coin, amt in non_zero.items():
-                print(f"   ✅ {coin}: {amt:,.4f}")
-        else:
-            print("   (فارغ)")
+        result = await exchange.private_get_v5_account_wallet_balance({
+            "accountType": "UNIFIED"
+        })
+        if result.get("retCode") == 0:
+            for account in result["result"].get("list", []):
+                print(f"   accountType:            {account.get('accountType')}")
+                print(f"   totalEquity:            ${account.get('totalEquity', '0')}")
+                print(f"   totalWalletBalance:     ${account.get('totalWalletBalance', '0')}")
+                print(f"   totalAvailableBalance:  ${account.get('totalAvailableBalance', '0')}")
+                print()
+                coins = account.get("coin", [])
+                if coins:
+                    print(f"   📦 العملات ({len(coins)}):")
+                    for coin in coins:
+                        wb = float(coin.get("walletBalance", 0) or 0)
+                        if wb > 0:
+                            print(f"      ✅ {coin['coin']}: {wb}")
+                else:
+                    print("   📦 لا توجد عملات")
     except Exception as e:
-        print(f"   ❌ {str(e)[:100]}")
+        print(f"   ❌ {str(e)[:150]}")
+
+    # ───────────────────────────────────────────────────────────
+    # 2. فحص جميع الحسابات عبر Asset endpoint
+    # ───────────────────────────────────────────────────────────
+    print("\n🔍 2️⃣ فحص كل الحسابات (Asset endpoint)")
+    print("-" * 60)
+    for acc_type in ["UNIFIED", "FUND", "CONTRACT", "SPOT"]:
+        try:
+            result = await exchange.private_get_v5_asset_transfer_query_account_coins_balance({
+                "accountType": acc_type
+            })
+            if result.get("retCode") == 0:
+                balances = result["result"].get("balance", [])
+                non_zero = [b for b in balances if float(b.get("walletBalance", 0) or 0) > 0]
+                if non_zero:
+                    print(f"   ✅ {acc_type}:")
+                    for b in non_zero:
+                        print(f"      • {b['coin']}: {b.get('walletBalance', 0)}  (transfer: {b.get('transferBalance', 0)})")
+                else:
+                    print(f"   ⚪ {acc_type}: فارغ")
+            else:
+                print(f"   ⚠️  {acc_type}: {result.get('retMsg', 'unknown')[:50]}")
+        except Exception as e:
+            err = str(e)[:80]
+            print(f"   ❌ {acc_type}: {err}")
 
     await exchange.close()
+
     print("\n" + "=" * 60)
-    print("✅ اكتمل الفحص")
+    print("📝 الخلاصة:")
+    print("   • لو وجدت USDT في FUND → نحتاج تحويلها إلى UNIFIED")
+    print("   • لو لم تجد USDT في أي مكان → الطلب لم ينفّذ بعد")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
-    asyncio.run(check_all_accounts())
+    asyncio.run(main())
