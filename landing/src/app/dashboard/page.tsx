@@ -1,4 +1,5 @@
 "use client";
+import OpportunityHunter from "./opportunity";
 import { useState, useEffect, useCallback } from "react";
 import {
   BarChart3, Zap, TrendingUp, Shield, Settings, LogOut,
@@ -398,46 +399,11 @@ export default function DashboardPage() {
           </>}
 
           {/* OPPORTUNITY HUNTER */}
-          {active==="hunter"&&(hasFeature("opportunity_hunter")?<>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <div><h2 style={{fontSize:18,fontWeight:700,marginBottom:4}}>🎯 Opportunity Hunter</h2><p style={{fontSize:12,color:"rgba(255,255,255,0.45)"}}>AI scanning beyond your signal queue</p></div>
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 14px",background:"rgba(251,191,36,0.1)",border:"1px solid rgba(251,191,36,0.2)",borderRadius:10}}>
-                <span style={{width:7,height:7,borderRadius:"50%",background:"#fbbf24"}}/>
-                <span style={{fontSize:12,color:"#fbbf24",fontWeight:600}}>4 opportunities found</span>
-              </div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {OPPS.map((o,i)=>(
-                <div key={i} style={{...card,padding:"20px 24px",border:"1px solid rgba(251,191,36,0.15)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"start",marginBottom:12}}>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <span style={{fontSize:16,fontWeight:700}}>{o.symbol}</span>
-                      <span style={{padding:"4px 10px",borderRadius:20,fontSize:11,fontWeight:600,background:"rgba(251,191,36,0.15)",color:"#fbbf24"}}>{o.type}</span>
-                    </div>
-                    <div style={{textAlign:"right"}}><p style={{fontSize:14,fontWeight:700,color:"#10b981"}}>{o.potential}</p><p style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>potential</p></div>
-                  </div>
-                  <p style={{fontSize:13,color:"rgba(255,255,255,0.55)",marginBottom:14}}>{o.detail}</p>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>AI Confidence</span>
-                      <div style={{width:80,height:6,background:"rgba(255,255,255,0.08)",borderRadius:3,overflow:"hidden"}}>
-                        <div style={{height:"100%",width:`${o.conf}%`,background:o.conf>=85?"#10b981":"#fbbf24",borderRadius:3}}/>
-                      </div>
-                      <span style={{fontSize:11,fontWeight:600,color:o.conf>=85?"#10b981":"#fbbf24"}}>{o.conf}%</span>
-                    </div>
-                    <div style={{display:"flex",gap:8}}>
-                      <button style={{padding:"8px 16px",borderRadius:9,background:"linear-gradient(135deg,#fbbf24,#f59e0b)",border:"none",color:"#1c0a00",fontWeight:700,fontSize:12,cursor:"pointer"}}>Analyze</button>
-                      <button style={{padding:"8px 14px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",fontSize:12,cursor:"pointer"}}>Skip</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>:(
+          {active==="hunter"&&(hasFeature("opportunity_hunter")?<OpportunityHunter/>:(
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:400,gap:16,textAlign:"center"}}>
               <div style={{fontSize:48}}>🎯</div>
               <h2 style={{fontSize:22,fontWeight:700}}>Opportunity Hunter</h2>
-              <p style={{color:"rgba(255,255,255,0.5)",maxWidth:360,lineHeight:1.7}}>AI scans the entire market for hidden setups beyond your signal queue. Available from Starter plan.</p>
+              <p style={{color:"rgba(255,255,255,0.5)",maxWidth:360,lineHeight:1.7}}>AI scans for hidden opportunities beyond your signal queue. Available from Starter plan.</p>
               <a href="/checkout?tier=starter" style={{padding:"12px 32px",borderRadius:12,background:"linear-gradient(135deg,#0ea5e9,#10b981)",color:"#020c07",fontWeight:700,fontSize:14,textDecoration:"none"}}>Upgrade to Starter</a>
             </div>
           ))}
