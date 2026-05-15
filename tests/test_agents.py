@@ -286,3 +286,139 @@ class TestBacktester:
 
         result = await tester.run_simple_backtest(ohlcv, entry, exit_sig)
         assert result.total_trades >= 0
+
+
+# ── Registry Tests ────────────────────────────────────────────────────────────
+
+class TestRegistry:
+
+    def test_total_87_agents(self):
+        from agents.registry import list_all_agents
+        result = list_all_agents()
+        assert result["total"] == 87
+
+    def test_all_departments_present(self):
+        from agents.registry import AGENT_REGISTRY
+        expected = {"trading", "engineering", "security", "financial",
+                    "customer", "marketing", "design", "product", "operations"}
+        assert set(AGENT_REGISTRY.keys()) == expected
+
+    def test_get_agent_by_id(self):
+        from agents.registry import get_agent
+        agent = get_agent("scanner_pro")
+        assert agent.AGENT_ID == "scanner_pro"
+
+    def test_security_has_7_agents(self):
+        from agents.security.agents import SECURITY_AGENTS
+        assert len(SECURITY_AGENTS) == 7
+
+    def test_financial_has_12_agents(self):
+        from agents.financial.agents import FINANCIAL_AGENTS
+        assert len(FINANCIAL_AGENTS) == 12
+
+    def test_customer_has_11_agents(self):
+        from agents.customer.agents import CUSTOMER_AGENTS
+        assert len(CUSTOMER_AGENTS) == 11
+
+    def test_marketing_has_12_agents(self):
+        from agents.marketing.agents import MARKETING_AGENTS
+        assert len(MARKETING_AGENTS) == 12
+
+    def test_engineering_has_10_agents(self):
+        from agents.engineering.agents import ENGINEERING_AGENTS
+        assert len(ENGINEERING_AGENTS) == 10
+
+    def test_design_has_7_agents(self):
+        from agents.design.agents import DESIGN_AGENTS
+        assert len(DESIGN_AGENTS) == 7
+
+    def test_product_has_7_agents(self):
+        from agents.product.agents import PRODUCT_AGENTS
+        assert len(PRODUCT_AGENTS) == 7
+
+    def test_operations_has_6_agents(self):
+        from agents.operations.agents import OPERATIONS_AGENTS
+        assert len(OPERATIONS_AGENTS) == 6
+
+
+# ── Security/Financial Logic Tests ────────────────────────────────────────────
+
+class TestSecurityLogic:
+
+    def test_crypto_defender_detects_api_keys(self):
+        from agents.security.agents import CryptoDefender
+        assert CryptoDefender.is_key_exposed("My token is ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890")
+        assert CryptoDefender.is_key_exposed("AKIA1234567890ABCDEF")
+        assert not CryptoDefender.is_key_exposed("Hello world")
+
+    def test_anti_fraud_scoring(self):
+        from agents.security.agents import AntiFraudAgent
+        fraud = AntiFraudAgent.__new__(AntiFraudAgent)
+
+        # Low risk
+        low = fraud.calculate_risk_score({"accounts_same_ip": 1, "transactions_per_hour": 2})
+        assert low.level == "low"
+        assert low.action == "allow"
+
+        # High risk
+        high = fraud.calculate_risk_score({
+            "accounts_same_ip": 5,
+            "card_country": "US",
+            "user_country": "RU",
+            "transactions_per_hour": 15,
+            "new_device": True,
+            "new_card": True,
+            "vpn_detected": True
+        })
+        assert high.level in ["high", "critical"]
+        assert high.action in ["review", "block"]
+
+
+class TestFinancialLogic:
+
+    def test_vat_calculation(self):
+        from agents.financial.agents import TaxCompliance
+        tax = TaxCompliance.__new__(TaxCompliance)
+
+        # Saudi Arabia (15%)
+        sa_vat = tax.calculate_vat(100, "SA")
+        assert sa_vat["vat_amount"] == 15.0
+        assert sa_vat["total"] == 115.0
+
+        # UAE (5%)
+        ae_vat = tax.calculate_vat(100, "AE")
+        assert ae_vat["vat_amount"] == 5.0
+
+        # Kuwait (0%)
+        kw_vat = tax.calculate_vat(100, "KW")
+        assert kw_vat["vat_amount"] == 0.0
+
+    def test_affiliate_tier_progression(self):
+        from agents.financial.agents import AffiliateManager
+        am = AffiliateManager.__new__(AffiliateManager)
+        assert am.get_tier(0) == "bronze"
+        assert am.get_tier(10) == "silver"
+        assert am.get_tier(50) == "gold"
+        assert am.get_tier(150) == "diamond"
+
+    def test_payment_gateway_routing(self):
+        from agents.financial.agents import PaymentGatewayManager
+        pgm = PaymentGatewayManager.__new__(PaymentGatewayManager)
+        assert "knet" in pgm.select_gateway("KW")
+        assert "lemon_squeezy" in pgm.select_gateway("DE")
+
+
+class TestDDoSShield:
+
+    def test_rate_limiting(self):
+        from agents.security.agents import DDoSShield
+        shield = DDoSShield.__new__(DDoSShield)
+        shield._ip_counters = {}
+        shield._blocked_ips = set()
+
+        # السماح بأول 60 طلب
+        for i in range(60):
+            assert shield.check_rate_limit("1.2.3.4", max_per_minute=60) is True
+
+        # حظر بعد التجاوز
+        assert shield.check_rate_limit("1.2.3.4", max_per_minute=60) is False

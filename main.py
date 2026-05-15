@@ -1,24 +1,22 @@
 """
 TRADO Platform — FastAPI Main Application
+87 AI Agents working 24/7 for Arabic traders
 """
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
-import asyncio
 from loguru import logger
 
 from orchestrator.core import TRADOOrchestrator
+from agents.registry import AGENT_REGISTRY, get_agent, list_all_agents
+from agents._shared.base_agent import AgentContext
 from config.settings import settings
 
-# ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
     title="TRADO Platform API",
     description="منصة تداول ذكية — 87 AI Agent يعملون 24/7",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc"
 )
 
 app.add_middleware(
@@ -29,7 +27,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ── Models ────────────────────────────────────────────────────────────────────
+
+class AgentRequest(BaseModel):
+    agent_id: str
+    user_id: str = "demo"
+    task: str
+    context_data: dict = {}
+
 
 class RunPipelineRequest(BaseModel):
     user_id: str = "demo"
@@ -38,22 +44,17 @@ class RunPipelineRequest(BaseModel):
     testnet: bool = True
 
 
-class AnalyzeRequest(BaseModel):
-    user_id: str = "demo"
-    symbol: str
-    question: str = "حلل هذا الزوج"
-
-
-# ── Routes ────────────────────────────────────────────────────────────────────
+# ── Core Routes ───────────────────────────────────────────────────────────────
 
 @app.get("/")
 async def root():
+    summary = list_all_agents()
     return {
         "name": "TRADO Platform",
         "version": "1.0.0",
         "status": "running",
-        "agents": 87,
-        "message": "منصة تداول ذكية 🚀"
+        "agents": summary,
+        "message": "منصة تداول ذكية 🚀 — 87 AI Agent جاهزون"
     }
 
 
@@ -61,6 +62,51 @@ async def root():
 async def health():
     return {"status": "healthy", "env": settings.app_env}
 
+
+@app.get("/agents")
+async def all_agents():
+    """قائمة كل الـ 87 agent المتوفرة"""
+    return list_all_agents()
+
+
+@app.get("/agents/{department}")
+async def department_agents(department: str):
+    """agents قسم معين"""
+    if department not in AGENT_REGISTRY:
+        raise HTTPException(404, f"Department '{department}' not found")
+    return {
+        "department": department,
+        "count": len(AGENT_REGISTRY[department]),
+        "agents": list(AGENT_REGISTRY[department].keys())
+    }
+
+
+@app.post("/agents/run")
+async def run_agent(request: AgentRequest):
+    """تشغيل agent محدد بطلب"""
+    try:
+        agent = get_agent(request.agent_id, request.user_id)
+        context = AgentContext(
+            user_id=request.user_id,
+            user_message=request.task,
+            additional=request.context_data
+        )
+        response = await agent.think(context)
+        return {
+            "agent": agent.AGENT_NAME,
+            "content": response.content,
+            "cost_usd": response.cost_usd,
+            "tokens": response.tokens_used,
+            "processing_ms": response.processing_time_ms
+        }
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        logger.error(f"Agent error: {e}")
+        raise HTTPException(500, str(e))
+
+
+# ── Trading Pipeline ──────────────────────────────────────────────────────────
 
 @app.post("/pipeline/run")
 async def run_pipeline(request: RunPipelineRequest):
@@ -72,7 +118,6 @@ async def run_pipeline(request: RunPipelineRequest):
             auto_execute=request.auto_execute,
             testnet=request.testnet
         )
-
         status = await orchestrator.get_system_status()
 
         return {
@@ -86,9 +131,7 @@ async def run_pipeline(request: RunPipelineRequest):
                     "stop_loss": s.stop_loss,
                     "take_profit": s.take_profit,
                     "confidence": s.confidence,
-                    "risk_approved": s.risk_decision.approved if s.risk_decision else False,
                     "executed": s.execution_result.success if s.execution_result else False,
-                    "timestamp": s.timestamp
                 }
                 for s in signals
             ],
@@ -96,60 +139,17 @@ async def run_pipeline(request: RunPipelineRequest):
         }
     except Exception as e:
         logger.error(f"Pipeline error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.post("/analyze")
-async def analyze_symbol(request: AnalyzeRequest):
-    """تحليل فني لزوج عملات"""
-    try:
-        from agents.trading.analyst.agent import AnalystMaster
-        from agents._shared.base_agent import AgentContext
-
-        analyst = AnalystMaster(user_id=request.user_id)
-        context = AgentContext(
-            user_id=request.user_id,
-            user_message=f"{request.question} — {request.symbol}"
-        )
-        response = await analyst.think(context)
-
-        return {
-            "symbol": request.symbol,
-            "analysis": response.content,
-            "cost_usd": response.cost_usd,
-            "processing_ms": response.processing_time_ms
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, str(e))
 
 
 @app.get("/status")
 async def system_status():
-    """حالة النظام"""
+    summary = list_all_agents()
     return {
         "platform": "TRADO",
         "version": "1.0.0",
         "environment": settings.app_env,
-        "agents_available": {
-            "trading": 15,
-            "engineering": 10,
-            "security": 7,
-            "financial": 12,
-            "customer": 11,
-            "marketing": 12,
-            "design": 7,
-            "product": 7,
-            "operations": 6,
-            "total": 87
-        },
-        "implemented": {
-            "scanner_pro": True,
-            "analyst_master": True,
-            "risk_guardian": True,
-            "executioner_pro": True,
-            "observatory": True,
-            "orchestrator": True
-        }
+        "agents": summary,
     }
 
 
@@ -157,9 +157,4 @@ async def system_status():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=settings.debug
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.debug)
