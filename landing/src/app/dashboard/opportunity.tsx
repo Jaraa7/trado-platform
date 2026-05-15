@@ -1,14 +1,11 @@
 "use client";
+import { canAutoExecute as tierCanAutoExecute } from "@/lib/tiers";
 import { useState, useEffect } from "react";
 import { Lock, Zap, TrendingUp, AlertCircle, CheckCircle, Clock, DollarSign, Settings2 } from "lucide-react";
 
 // ─── Tier config ──────────────────────────────────────────────────
 const TIER = "elite"; // في الإنتاج يأتي من JWT
-const TIER_PRICES: Record<string,number> = {
-  trial:0, micro:29, starter:59, pro:99,
-  elite:199, whale:499, institutional:1499, founder:2999
-};
-const canAutoExecute = TIER_PRICES[TIER] >= 199; // Elite وما فوق
+const canAutoExecute = tierCanAutoExecute(TIER as any);
 
 // ─── Types ────────────────────────────────────────────────────────
 type OppStatus = "live" | "fading" | "expired" | "taken";

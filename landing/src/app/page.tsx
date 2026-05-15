@@ -1,45 +1,12 @@
 "use client";
+import { TIERS as TIER_CONFIGS, TIER_ROW_1, TIER_ROW_2, getDisplayPrice } from "@/lib/tiers";
 import { useEffect, useState } from "react";
 import { getLocale, rtlLocales, translations, type Locale } from "@/lib/i18n";
 import { Check, ChevronDown, Menu, X, TrendingUp, Shield, Zap, BarChart3, Bell, Globe, ArrowRight, Star } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://trado-bot.fly.dev";
 
-const TIERS = [
-  {
-    slug:"trial", price_m:0, price_y:0, popular:false, badge:"7 days free",
-    features:["3 signals/day","1 exchange","All 87 AI tools","Telegram alerts","Mobile app","No credit card"],
-  },
-  {
-    slug:"micro", price_m:29, price_y:290, popular:false, badge:null,
-    features:["5 signals/day","1 exchange","All 87 AI tools","Telegram alerts","Mobile app","Knowledge base"],
-  },
-  {
-    slug:"starter", price_m:59, price_y:590, popular:false, badge:null,
-    features:["15 signals/day","2 exchanges","Whale Tracker live","Sentiment dashboard","Limited backtesting","12h support"],
-  },
-  {
-    slug:"pro", price_m:99, price_y:990, popular:true, badge:"Most Popular",
-    features:["50 signals/day","3 exchanges","Full backtesting","Strategy builder","Portfolio manager","Weekly PDF report","1h support"],
-  },
-  {
-    slug:"elite", price_m:199, price_y:1990, popular:false, badge:null,
-    features:["150 signals/day","5 exchanges","API access","Tax reporting","Multi-portfolio","Custom risk limits","15min support"],
-  },
-  {
-    slug:"whale", price_m:499, price_y:4990, popular:false, badge:"🐋 Whale",
-    features:["Unlimited signals","10 exchanges","Dedicated account manager","Weekly strategy call","Daily reports","Early signals","Custom strategy"],
-  },
-  {
-    slug:"institutional", price_m:1499, price_y:14990, popular:false, badge:"🏛️",
-    features:["Unlimited signals","Unlimited exchanges","White-label dashboard","5 sub-accounts","99.9% SLA","Compliance reports","24/7 dedicated manager","Direct API"],
-  },
-  {
-    slug:"founder", price_m:2999, price_y:null, popular:false, badge:"👑 100 seats only",
-    features:["Everything in Institutional","Lifetime price lock","Founding member badge","Direct line to product team","Shape our roadmap","All future features free","Annual in-person summit"],
-  },
-];
-
+// TIERS loaded from @/lib/tiers — single source of truth
 const TIER_NAMES: Record<string,Record<Locale,string>> = {
   trial:         {en:"Trial",        ar:"تجريبي",      tr:"Deneme",      fr:"Essai",        es:"Prueba",       ru:"Пробный"},
   micro:         {en:"Micro",        ar:"Micro",        tr:"Micro",       fr:"Micro",        es:"Micro",        ru:"Micro"},
@@ -319,22 +286,22 @@ export default function HomePage() {
 
           {/* Row 1: Trial + Micro + Starter + Pro */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {TIERS.slice(0,4).map(tier=>{
-              const monthlyPrice = annual && tier.price_y ? Math.floor(tier.price_y/12) : tier.price_m;
+            {TIER_ROW_1.map(slugKey=>{const tier=TIER_CONFIGS[slugKey];
+              const monthlyPrice = annual && tier.price_y ? Math.floor((tier.price_annual||0)/12) : tier.price_monthly;
               return(
                 <div key={tier.slug} className={`relative rounded-2xl p-6 transition ${tier.popular?"border border-blue-500/40 bg-gradient-to-b from-blue-950/50 to-[#0d1526]":"glass"}`}>
                   {tier.badge&&<div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${tier.popular?"bg-gradient-to-r from-blue-500 to-emerald-500 text-white":"bg-white/10 text-white/70"}`}>{tier.badge}</div>}
                   <h3 className="font-display text-lg font-bold mb-3 mt-2">{TIER_NAMES[tier.slug][locale]}</h3>
                   <div className="flex items-baseline gap-1 mb-5">
-                    {tier.price_m===0
+                    {tier.price_monthlyonthly===0
                       ? <span className="text-3xl font-bold font-mono grad">Free</span>
                       : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
                     }
                   </div>
-                  {annual && tier.price_y && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_y}/yr</p>}
-                  <a href={tier.price_m===0?"/signup":`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
+                  {annual && tier.price_annual && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_annual}/yr</p>}
+                  <a href={tier.price_monthlyonthly===0?"/signup":`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
                      className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${tier.popular?"btn-primary":"btn-ghost"}`}>
-                    <span>{tier.price_m===0?"Start Free":t("pricing_cta")}</span>
+                    <span>{tier.price_monthlyonthly===0?"Start Free":t("pricing_cta")}</span>
                   </a>
                   <ul className="space-y-2">
                     {tier.features.map(f=>(
@@ -351,8 +318,8 @@ export default function HomePage() {
 
           {/* Row 2: Elite + Whale + Institutional + Founder */}
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {TIERS.slice(4).map(tier=>{
-              const monthlyPrice = annual && tier.price_y ? Math.floor(tier.price_y/12) : tier.price_m;
+            {TIER_ROW_2.map(slugKey=>{const tier=TIER_CONFIGS[slugKey];
+              const monthlyPrice = annual && tier.price_y ? Math.floor((tier.price_annual||0)/12) : tier.price_monthly;
               const isFounder = tier.slug==="founder";
               const isInstitutional = tier.slug==="institutional";
               return(
@@ -361,13 +328,13 @@ export default function HomePage() {
                   <h3 className={`font-display text-lg font-bold mb-3 mt-2 ${isFounder?"grad-gold":""}`}>{TIER_NAMES[tier.slug][locale]}</h3>
                   <div className="flex items-baseline gap-1 mb-5">
                     {isFounder&&!annual
-                      ? <><span className="text-3xl font-bold font-mono grad-gold">${tier.price_m}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
+                      ? <><span className="text-3xl font-bold font-mono grad-gold">${tier.price_monthly}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
                       : tier.price_y===null
-                      ? <span className="text-3xl font-bold font-mono grad-gold">${tier.price_m}<span className="text-white/35 text-sm text-base font-normal">{t("pricing_mo")}</span></span>
+                      ? <span className="text-3xl font-bold font-mono grad-gold">${tier.price_monthly}<span className="text-white/35 text-sm text-base font-normal">{t("pricing_mo")}</span></span>
                       : <><span className="text-3xl font-bold font-mono">${monthlyPrice}</span><span className="text-white/35 text-sm">{t("pricing_mo")}</span></>
                     }
                   </div>
-                  {annual && tier.price_y && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_y}/yr</p>}
+                  {annual && tier.price_annual && <p className="text-emerald-400 text-xs -mt-3 mb-4">${tier.price_annual}/yr</p>}
                   {tier.slug==="founder"&&<p className="text-amber-400/70 text-xs -mt-3 mb-4">Annual billing only</p>}
                   <a href={`/checkout?tier=${tier.slug}&billing=${annual?"annual":"monthly"}`}
                      className={`block text-center py-2.5 rounded-xl text-sm font-semibold mb-5 transition ${isFounder?"bg-gradient-to-r from-amber-500 to-yellow-400 text-black hover:opacity-90":isInstitutional?"bg-gradient-to-r from-violet-600 to-blue-600 text-white hover:opacity-90":"btn-ghost"}`}>

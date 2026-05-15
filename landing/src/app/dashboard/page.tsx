@@ -1,4 +1,5 @@
 "use client";
+import { TIERS as TIER_CONFIGS, hasFeature as tierHasFeature, hasStrategy as tierHasStrategy, canAddExchange as tierCanAddExchange, canAddPair as tierCanAddPair, canAutoExecute as tierCanAutoExecute } from "@/lib/tiers";
 import OpportunityHunter from "./opportunity";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -10,16 +11,8 @@ import {
 // ─── Types & Constants ────────────────────────────────────────────
 const TIER = "pro";
 
-const TIER_LIMITS: Record<string,{signals:number;exchanges:number;pairs:number;strategies:string[];markets:string[];features:string[]}> = {
-  trial:         {signals:3,  exchanges:1, pairs:5,   strategies:["trend_following"],markets:["spot"],features:["signals"]},
-  micro:         {signals:5,  exchanges:1, pairs:10,  strategies:["trend_following","breakout"],markets:["spot"],features:["signals","alerts"]},
-  starter:       {signals:15, exchanges:2, pairs:20,  strategies:["trend_following","breakout","mean_reversion"],markets:["spot","futures"],features:["signals","alerts","whale_tracker","opportunity_hunter"]},
-  pro:           {signals:50, exchanges:3, pairs:50,  strategies:["trend_following","breakout","mean_reversion","scalping","custom"],markets:["spot","futures","perpetuals"],features:["signals","alerts","whale_tracker","opportunity_hunter","backtesting","strategy_builder"]},
-  elite:         {signals:150,exchanges:5, pairs:-1,  strategies:["trend_following","breakout","mean_reversion","scalping","custom","multi_strategy"],markets:["spot","futures","perpetuals","options"],features:["signals","alerts","whale_tracker","opportunity_hunter","backtesting","strategy_builder","api","tax"]},
-  whale:         {signals:-1, exchanges:10,pairs:-1,  strategies:["trend_following","breakout","mean_reversion","scalping","custom","multi_strategy","institutional"],markets:["spot","futures","perpetuals","options","defi"],features:["signals","alerts","whale_tracker","opportunity_hunter","backtesting","strategy_builder","api","tax","dedicated_manager","early_signals"]},
-  institutional: {signals:-1, exchanges:-1,pairs:-1,  strategies:["trend_following","breakout","mean_reversion","scalping","custom","multi_strategy","institutional"],markets:["spot","futures","perpetuals","options","defi","cfd"],features:["signals","alerts","whale_tracker","opportunity_hunter","backtesting","strategy_builder","api","tax","dedicated_manager","early_signals","white_label","sub_accounts"]},
-  founder:       {signals:-1, exchanges:-1,pairs:-1,  strategies:["trend_following","breakout","mean_reversion","scalping","custom","multi_strategy","institutional"],markets:["spot","futures","perpetuals","options","defi","cfd"],features:["signals","alerts","whale_tracker","opportunity_hunter","backtesting","strategy_builder","api","tax","dedicated_manager","early_signals","white_label","sub_accounts"]},
-};
+// ─── Tier limits from central config ────────────────────────────
+const limits = TIER_CONFIGS[TIER as keyof typeof TIER_CONFIGS] ?? TIER_CONFIGS.trial;
 
 // Exchange API endpoints لجلب الأزواج
 const EXCHANGE_APIS: Record<string,{spot:string;futures:string;perpetuals:string}> = {
@@ -116,7 +109,7 @@ const STATS = [
   {label:"Total P&L",   value:"+$4,821",sub:"+12.4% this month",up:true},
   {label:"Win Rate",    value:"71.3%",  sub:"last 30 days",     up:true},
   {label:"Open Trades", value:"3",      sub:"2 exchanges",       up:null},
-  {label:"Signals Used",value:"47",     sub:`of ${TIER_LIMITS[TIER].signals===-1?"∞":TIER_LIMITS[TIER].signals} today`,up:null},
+  {label:"Signals Used",value:"47",     sub:`of ${limits.signals_per_day===-1?"∞":limits.signals_per_day} today`,up:null},
 ];
 
 const NAV = [
@@ -128,10 +121,10 @@ const NAV = [
   {id:"risk",      label:"Risk",               icon:Shield},
 ];
 
-function hasFeature(f:string)  { return TIER_LIMITS[TIER].features.includes(f); }
-function hasStrategy(s:string) { return TIER_LIMITS[TIER].strategies.includes(s); }
-function hasMarket(m:string)   { return TIER_LIMITS[TIER].markets.includes(m); }
-function canAddExchange(n:number) { const l=TIER_LIMITS[TIER].exchanges; return l===-1||n<=l; }
+function hasFeature(f:string)  { return limits.features.includes(f); }
+function hasStrategy(s:string) { return limits.strategies.includes(s); }
+function hasMarket(m:string)   { return limits.markets.includes(m); }
+function canAddExchange(n:number) { const l=limits.exchanges; return l===-1||n<=l; }
 
 function LockedBadge() {
   return <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:6,background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.25)",color:"#fbbf24",fontSize:10,fontWeight:600}}><Lock size={9}/> Upgrade</span>;
@@ -151,7 +144,7 @@ export default function DashboardPage() {
   const [pairsError,setPairsError]   = useState("");
   const [pairsSource,setPairsSource] = useState(""); // which exchange/market loaded
 
-  const limits = TIER_LIMITS[TIER];
+  
 
   // جلب الأزواج من المنصة عند تغيير Exchange أو Market
   const fetchPairs = useCallback(async (exchanges: string[], market: string) => {
@@ -368,7 +361,7 @@ export default function DashboardPage() {
                 <span style={{width:7,height:7,borderRadius:"50%",background:"#10b981"}}/>
                 <span style={{fontSize:12,color:"#10b981",fontWeight:600}}>Scanning markets live</span>
               </div>
-              <p style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>{limits.signals===-1?"Unlimited":`${limits.signals-47} remaining`} today</p>
+              <p style={{fontSize:12,color:"rgba(255,255,255,0.35)"}}>{limits.signals_per_day===-1?"Unlimited":`${limits.signals_per_day-47} remaining`} today</p>
             </div>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
               {SIGNALS.map((s,i)=>(
