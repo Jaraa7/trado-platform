@@ -1,4 +1,4 @@
-app = "trado-platform"
+app = "trado-bot"
 primary_region = "sin"  # Singapore — أقرب لمنطقة الخليج
 
 [build]
