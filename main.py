@@ -208,3 +208,24 @@ async def get_waitlist_count():
         return {"count": WaitlistDB.count()}
     except:
         return {"count": 500}    # fallback
+
+
+# ════════════════════════════════════════════════════════════════════
+# Authentication Routes
+# ════════════════════════════════════════════════════════════════════
+try:
+    from auth.routes import router as auth_router
+    app.include_router(auth_router)
+    logger.info("✅ Auth routes loaded")
+except Exception as e:
+    logger.warning(f"Auth routes not loaded: {e}")
+
+# ════════════════════════════════════════════════════════════════════
+# Payment Routes (Lemon Squeezy)
+# ════════════════════════════════════════════════════════════════════
+try:
+    from payments.lemonsqueezy import router as payments_router
+    app.include_router(payments_router)
+    logger.info("✅ Payment routes loaded")
+except Exception as e:
+    logger.warning(f"Payment routes not loaded: {e}")

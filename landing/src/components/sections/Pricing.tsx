@@ -99,15 +99,15 @@ export function Pricing() {
 
           {/* Billing toggle */}
           <div className="inline-flex items-center gap-4 bg-white/5 rounded-full p-1.5">
-            <button
+            <a
               onClick={() => setAnnual(false)}
               className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
                 !annual ? "bg-emerald-500 text-ink-950" : "text-ink-50/60"
               }`}
             >
               شهري
-            </button>
-            <button
+            </a>
+            <a
               onClick={() => setAnnual(true)}
               className={`px-6 py-2 rounded-full text-sm font-semibold transition flex items-center gap-2 ${
                 annual ? "bg-emerald-500 text-ink-950" : "text-ink-50/60"
@@ -117,7 +117,7 @@ export function Pricing() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-gold-400 text-ink-950">
                 وفّر 17%
               </span>
-            </button>
+            </a>
           </div>
         </motion.div>
 
@@ -162,7 +162,7 @@ export function Pricing() {
                 )}
               </div>
 
-              <button
+              <a
                 className={`w-full py-3 rounded-xl font-semibold mb-6 transition ${
                   t.popular
                     ? "bg-emerald-500 hover:bg-emerald-400 text-ink-950"
@@ -170,7 +170,7 @@ export function Pricing() {
                 }`}
               >
                 {t.cta}
-              </button>
+              </a>
 
               <ul className="space-y-3">
                 {t.features.map((f) => (
