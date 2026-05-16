@@ -2,7 +2,8 @@
 TRADO Platform — FastAPI Main Application
 87 AI Agents working 24/7 for Arabic traders
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from payments.routes import router as payments_router, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from loguru import logger
