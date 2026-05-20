@@ -2,8 +2,7 @@
 TRADO Platform — FastAPI Main Application
 87 AI Agents working 24/7 for Arabic traders
 """
-from fastapi import FastAPI
-from payments.routes import router as payments_router, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from loguru import logger
@@ -29,14 +28,12 @@ app.add_middleware(
 )
 
 
-# ── Models ────────────────────────────────────────────────────────────────────
-
+# ── Models ────────────────────────────────────────────────────────
 class AgentRequest(BaseModel):
     agent_id: str
     user_id: str = "demo"
     task: str
     context_data: dict = {}
-
 
 class RunPipelineRequest(BaseModel):
     user_id: str = "demo"
@@ -44,9 +41,15 @@ class RunPipelineRequest(BaseModel):
     auto_execute: bool = False
     testnet: bool = True
 
+class WaitlistRequest(BaseModel):
+    email: str
+    name: str = None
+    country: str = None
+    portfolio_size: str = None
+    referral_source: str = None
 
-# ── Core Routes ───────────────────────────────────────────────────────────────
 
+# ── Core Routes ───────────────────────────────────────────────────
 @app.get("/")
 async def root():
     summary = list_all_agents()
@@ -58,21 +61,16 @@ async def root():
         "message": "منصة تداول ذكية 🚀 — 87 AI Agent جاهزون"
     }
 
-
 @app.get("/health")
 async def health():
     return {"status": "healthy", "env": settings.app_env}
 
-
 @app.get("/agents")
 async def all_agents():
-    """قائمة كل الـ 87 agent المتوفرة"""
     return list_all_agents()
-
 
 @app.get("/agents/{department}")
 async def department_agents(department: str):
-    """agents قسم معين"""
     if department not in AGENT_REGISTRY:
         raise HTTPException(404, f"Department '{department}' not found")
     return {
@@ -81,10 +79,8 @@ async def department_agents(department: str):
         "agents": list(AGENT_REGISTRY[department].keys())
     }
 
-
 @app.post("/agents/run")
 async def run_agent(request: AgentRequest):
-    """تشغيل agent محدد بطلب"""
     try:
         agent = get_agent(request.agent_id, request.user_id)
         context = AgentContext(
@@ -107,11 +103,9 @@ async def run_agent(request: AgentRequest):
         raise HTTPException(500, str(e))
 
 
-# ── Trading Pipeline ──────────────────────────────────────────────────────────
-
+# ── Trading Pipeline ──────────────────────────────────────────────
 @app.post("/pipeline/run")
 async def run_pipeline(request: RunPipelineRequest):
-    """تشغيل pipeline التداول الكامل"""
     try:
         orchestrator = TRADOOrchestrator(user_id=request.user_id)
         signals = await orchestrator.run_trading_pipeline(
@@ -120,19 +114,18 @@ async def run_pipeline(request: RunPipelineRequest):
             testnet=request.testnet
         )
         status = await orchestrator.get_system_status()
-
         return {
             "success": True,
             "signals_found": len(signals),
             "signals": [
                 {
-                    "symbol": s.symbol,
-                    "direction": s.direction,
-                    "entry": s.entry_price,
-                    "stop_loss": s.stop_loss,
-                    "take_profit": s.take_profit,
+                    "symbol":     s.symbol,
+                    "direction":  s.direction,
+                    "entry":      s.entry_price,
+                    "stop_loss":  s.stop_loss,
+                    "take_profit":s.take_profit,
                     "confidence": s.confidence,
-                    "executed": s.execution_result.success if s.execution_result else False,
+                    "executed":   s.execution_result.success if s.execution_result else False,
                 }
                 for s in signals
             ],
@@ -142,43 +135,22 @@ async def run_pipeline(request: RunPipelineRequest):
         logger.error(f"Pipeline error: {e}")
         raise HTTPException(500, str(e))
 
-
 @app.get("/status")
 async def system_status():
-    summary = list_all_agents()
     return {
         "platform": "TRADO",
         "version": "1.0.0",
         "environment": settings.app_env,
-        "agents": summary,
+        "agents": list_all_agents(),
     }
 
 
-# ── Entry Point ───────────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.debug)
-
-
-# ════════════════════════════════════════════════════════════════════
-# Public Endpoints (للـ Landing Page)
-# ════════════════════════════════════════════════════════════════════
-
-class WaitlistRequest(BaseModel):
-    email: str
-    name: str = None
-    country: str = None
-    portfolio_size: str = None
-    referral_source: str = None
-
-
+# ── Waitlist ──────────────────────────────────────────────────────
 @app.post("/waitlist")
 async def join_waitlist(request: WaitlistRequest):
-    """انضمام لقائمة الانتظار قبل الإطلاق"""
     try:
         from db.client import WaitlistDB
-        result = WaitlistDB.add(
+        WaitlistDB.add(
             email=request.email,
             full_name=request.name,
             country_code=request.country,
@@ -194,46 +166,18 @@ async def join_waitlist(request: WaitlistRequest):
         }
     except Exception as e:
         logger.error(f"Waitlist error: {e}")
-        # Still return success to user (Privacy)
-        return {
-            "success": True,
-            "message": "تم استلام طلبك."
-        }
-
+        return {"success": True, "message": "تم استلام طلبك."}
 
 @app.get("/waitlist/count")
 async def get_waitlist_count():
-    """عدد الأشخاص في قائمة الانتظار (عام)"""
     try:
         from db.client import WaitlistDB
         return {"count": WaitlistDB.count()}
     except:
-        return {"count": 500}    # fallback
+        return {"count": 500}
 
 
-# ════════════════════════════════════════════════════════════════════
-# Authentication Routes
-# ════════════════════════════════════════════════════════════════════
-try:
-    from auth.routes import router as auth_router
-    app.include_router(auth_router)
-    logger.info("✅ Auth routes loaded")
-except Exception as e:
-    logger.warning(f"Auth routes not loaded: {e}")
-
-# ════════════════════════════════════════════════════════════════════
-# Payment Routes (Lemon Squeezy)
-# ════════════════════════════════════════════════════════════════════
-try:
-    from payments.lemonsqueezy import router as payments_router
-    app.include_router(payments_router)
-    logger.info("✅ Payment routes loaded")
-except Exception as e:
-    logger.warning(f"Payment routes not loaded: {e}")
-
-# ════════════════════════════════════════════════════════════════════
-# Telegram Webhook
-# ════════════════════════════════════════════════════════════════════
+# ── Telegram Webhook ──────────────────────────────────────────────
 @app.post("/telegram/webhook")
 async def telegram_webhook(request: Request):
     try:
@@ -245,3 +189,26 @@ async def telegram_webhook(request: Request):
     except Exception as e:
         logger.error(f"Telegram webhook error: {e}")
         return {"ok": False}
+
+
+# ── Auth Routes ───────────────────────────────────────────────────
+try:
+    from auth.routes import router as auth_router
+    app.include_router(auth_router)
+    logger.info("✅ Auth routes loaded")
+except Exception as e:
+    logger.warning(f"Auth routes not loaded: {e}")
+
+# ── Payment Routes (Tap) ──────────────────────────────────────────
+try:
+    from payments.routes import router as tap_router
+    app.include_router(tap_router)
+    logger.info("✅ Tap payment routes loaded")
+except Exception as e:
+    logger.warning(f"Tap payment routes not loaded: {e}")
+
+
+# ── Entry Point ───────────────────────────────────────────────────
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=settings.debug)
