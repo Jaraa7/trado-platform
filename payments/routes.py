@@ -1,7 +1,8 @@
 """
 💳 Tap Payments Routes — FastAPI
 """
-from fastapi import APIRouter, Request, HTTPException, Header
+from fastapi import APIRouter, Request, HTTPException, Header, Depends
+from auth.service import get_current_user
 from pydantic import BaseModel
 from typing import Optional
 from payments.tap import (
@@ -46,24 +47,40 @@ async def tap_webhook(request: Request, x_tap_signature: Optional[str] = Header(
     body  = await request.body()
     event = await request.json()
 
-    # تحقق من صحة الـ webhook
-    if x_tap_signature:
-        if not verify_webhook(body, x_tap_signature):
-            raise HTTPException(status_code=401, detail="Invalid signature")
+    # تحقق من صحة الـ webhook — إلزامي (رفض أي طلب بدون توقيع صحيح)
+    if not x_tap_signature or not verify_webhook(body, x_tap_signature):
+        raise HTTPException(status_code=401, detail="Invalid or missing signature")
 
     from db.client import get_supabase
     db = get_supabase(service_role=True)
     return await handle_webhook(event, db)
 
 
+def _assert_owns_subscription(user: dict, subscription_id: str):
+    """التأكد أن الاشتراك يخص المستخدم الحالي"""
+    from db.client import get_supabase
+    db = get_supabase(service_role=True)
+    row = (
+        db.table("subscriptions")
+        .select("user_id")
+        .eq("provider_subscription_id", subscription_id)
+        .limit(1)
+        .execute()
+    )
+    if not row.data or str(row.data[0].get("user_id")) != str(user.get("id")):
+        raise HTTPException(status_code=403, detail="Subscription does not belong to this user")
+
+
 @router.post("/cancel")
-async def cancel_sub(req: CancelRequest):
-    """إلغاء اشتراك"""
+async def cancel_sub(req: CancelRequest, user: dict = Depends(get_current_user)):
+    """إلغاء اشتراك — يتطلب تسجيل دخول وملكية الاشتراك"""
+    _assert_owns_subscription(user, req.subscription_id)
     result = await cancel_subscription(req.subscription_id)
     return result
 
 
 @router.get("/subscription/{subscription_id}")
-async def get_sub(subscription_id: str):
-    """جلب تفاصيل اشتراك"""
+async def get_sub(subscription_id: str, user: dict = Depends(get_current_user)):
+    """جلب تفاصيل اشتراك — يتطلب تسجيل دخول وملكية الاشتراك"""
+    _assert_owns_subscription(user, subscription_id)
     return await get_subscription(subscription_id)

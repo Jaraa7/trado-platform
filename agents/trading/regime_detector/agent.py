@@ -31,7 +31,7 @@ class RegimeResult:
 class RegimeDetector(BaseAgent):
     AGENT_ID = "regime_detector"
     AGENT_NAME = "Regime Detector 🌊"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1000
 
     @property

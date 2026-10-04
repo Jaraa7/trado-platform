@@ -2,7 +2,6 @@
 🟧 Customer Success Department — 11 Agents
 """
 from agents._shared.agent_factory import create_agent_class
-from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 
 
 SupportPro = create_agent_class(
@@ -21,7 +20,7 @@ First response time < 5 دقائق. تحل المشكلات بدقة وسرعة.
         "Live chat", "Email support", "Telegram support",
         "Macros management", "KB updates"
     ],
-    model="claude-haiku-4-5"
+    tier="cheap"
 )
 
 
@@ -44,7 +43,7 @@ def make_chatbot(tier: str, signals_per_day, exchanges, features: str):
             "Billing questions", "Cancellation handling", "Reactivation",
             "Multi-language support"
         ],
-        model="claude-haiku-4-5",
+        tier="cheap",
         max_tokens=800
     )
 

@@ -1,8 +1,6 @@
 """
 Scanner Pro — مسح 500+ زوج عملات كل 60 ثانية
 """
-import asyncio
-from typing import Optional
 from loguru import logger
 
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
@@ -11,7 +9,7 @@ from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 class ScannerPro(BaseAgent):
     AGENT_ID = "scanner_pro"
     AGENT_NAME = "Scanner Pro 🔍"
-    MODEL = "claude-haiku-4-5"  # سرعة + رخص
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن  # سرعة + رخص
     MAX_TOKENS = 1500
     KNOWLEDGE_DIR = "knowledge_base/trading"
 

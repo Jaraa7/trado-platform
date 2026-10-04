@@ -2,7 +2,6 @@
 News Analyst — تحليل الأخبار وتأثيرها على السوق فوراً
 """
 import httpx
-import asyncio
 from dataclasses import dataclass
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 
@@ -25,7 +24,7 @@ class NewsItem:
 class NewsAnalyst(BaseAgent):
     AGENT_ID = "news_analyst"
     AGENT_NAME = "News Analyst 📰"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 2000
 
     @property

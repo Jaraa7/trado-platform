@@ -2,17 +2,14 @@
 TRADO Base Agent — الكلاس الأساسي لجميع الـ 87 agent
 """
 import time
-import asyncio
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from loguru import logger
-import anthropic
 
 from agents._shared.memory import MemorySystem
 from agents._shared.rag import RAGSystem
-from config.settings import settings
 
 
 @dataclass
@@ -56,21 +53,18 @@ class BaseAgent(ABC):
     # يجب تعريفها في كل agent
     AGENT_ID: str = "base"
     AGENT_NAME: str = "Base Agent"
-    MODEL: str = "claude-sonnet-4-5"
+    # TIER هو ما يعلنه الوكيل؛ MODEL يبقى للتوافق الخلفي فقط (يُترجم عبر config/models.py)
+    TIER: str = "standard"             # frontier | standard | cheap
+    MODEL: str = ""                    # فارغ = اتبع TIER
     MAX_TOKENS: int = 2000
     KNOWLEDGE_DIR: Optional[str] = None
-
-    # تكاليف النماذج (USD per 1M tokens)
-    MODEL_COSTS = {
-        "claude-sonnet-4-5": {"input": 3.0, "output": 15.0},
-        "claude-haiku-4-5": {"input": 0.25, "output": 1.25},
-    }
 
     def __init__(self, user_id: str = "system"):
         self.user_id = user_id
         self.memory = MemorySystem(agent_id=self.AGENT_ID, user_id=user_id)
         self.rag = RAGSystem(agent_id=self.AGENT_ID)
-        self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        from core.llm_router import get_router
+        self._router = get_router()
         self._total_cost = 0.0
         self._call_count = 0
 
@@ -110,18 +104,17 @@ class BaseAgent(ABC):
                 messages.append({"role": msg["role"], "content": msg["content"]})
             messages.append({"role": "user", "content": context.user_message})
 
-            # 5. الاستدعاء
-            response = self._client.messages.create(
-                model=self.MODEL,
-                max_tokens=self.MAX_TOKENS,
-                system=full_system,
-                messages=messages
+            # 5. الاستدعاء عبر الموجّه (فئة → نموذج، مع بديل تلقائي وتسجيل تكلفة)
+            result = self._router.complete(
+                tier=self.TIER, system=full_system, messages=messages,
+                agent_id=self.AGENT_ID, max_tokens=self.MAX_TOKENS,
+                force_model=self.MODEL or None,  # توافق خلفي لوكيل يحدد نموذجًا صراحة
             )
-
-            content = response.content[0].text
-            input_tokens = response.usage.input_tokens
-            output_tokens = response.usage.output_tokens
-            cost = self._calculate_cost(input_tokens, output_tokens)
+            content = result.text
+            input_tokens = result.input_tokens
+            output_tokens = result.output_tokens
+            cost = result.cost_usd
+            used_model = result.model
 
             self._total_cost += cost
 
@@ -148,7 +141,9 @@ class BaseAgent(ABC):
                 metadata={
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
-                    "model": self.MODEL
+                    "model": used_model,
+                    "tier": self.TIER,
+                    "fallback_used": result.fallback_used,
                 }
             )
 
@@ -163,8 +158,9 @@ class BaseAgent(ABC):
             )
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
-        costs = self.MODEL_COSTS.get(self.MODEL, {"input": 3.0, "output": 15.0})
-        return (input_tokens * costs["input"] + output_tokens * costs["output"]) / 1_000_000
+        from config.models import cost_usd, TIERS
+        key = self.MODEL or TIERS[self.TIER][0]
+        return cost_usd(key, input_tokens, output_tokens)
 
     @property
     def total_cost(self) -> float:

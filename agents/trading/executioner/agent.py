@@ -1,12 +1,11 @@
 """
 Executioner Pro — تنفيذ الصفقات بأسرع وأذكى طريقة
 """
-import asyncio
 import time
 from dataclasses import dataclass
 from typing import Optional
 from loguru import logger
-from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
+from agents._shared.base_agent import BaseAgent
 from agents.trading.risk_guardian.agent import TradeProposal, RiskDecision
 
 
@@ -27,7 +26,7 @@ class ExecutionResult:
 class ExecutionerPro(BaseAgent):
     AGENT_ID = "executioner_pro"
     AGENT_NAME = "Executioner Pro ⚡"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 500
 
     @property
@@ -44,6 +43,18 @@ class ExecutionerPro(BaseAgent):
         testnet: bool = True
     ) -> ExecutionResult:
         """تنفيذ الصفقة على المنصة"""
+
+        # ── بوابات الحوكمة (حتمية، قبل أي شيء) ─────────────────────
+        from governance.killswitch import KillSwitch
+        import os as _os
+        ks_state = KillSwitch().state()
+        if ks_state.get("stopped"):
+            return ExecutionResult(success=False, symbol=proposal.symbol,
+                                   error=f"Kill switch ON: {ks_state.get('reason')}")
+        # paper فقط حتى يُثبت السجل: التداول الحقيقي يتطلب NERVOUS_LIVE_ENABLED=true في الحوكمة
+        if not testnet and _os.getenv("NERVOUS_LIVE_ENABLED", "").lower() not in ("1", "true"):
+            return ExecutionResult(success=False, symbol=proposal.symbol,
+                                   error="Live trading disabled (paper phase) — NERVOUS_LIVE_ENABLED not set")
 
         if not risk_decision.approved:
             return ExecutionResult(

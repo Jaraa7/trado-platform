@@ -38,7 +38,7 @@ async def test_step_1_connection():
         # رصيد الحساب
         balance = await exchange.fetch_balance()
         usdt = balance.get("USDT", {})
-        print(f"  ✅ الاتصال نجح!")
+        print("  ✅ الاتصال نجح!")
         print(f"  💰 رصيد USDT متاح: ${usdt.get('free', 0):,.2f}")
         print(f"  💰 إجمالي USDT:    ${usdt.get('total', 0):,.2f}")
 
@@ -106,7 +106,7 @@ async def test_step_3_ai_analysis(price, vol_ratio):
     response = await analyst.analyze("BTC/USDT", market_data, user_id="founder")
 
     if response.success:
-        print(f"  ✅ التحليل نجح!")
+        print("  ✅ التحليل نجح!")
         print(f"  💰 التكلفة: ${response.cost_usd:.6f}")
         print(f"  ⏱️  الوقت: {response.processing_time_ms:.0f}ms")
         print()
@@ -142,7 +142,7 @@ async def test_step_4_risk_check(price, balance):
 
     decision = guardian.calculate_position_size(proposal)
 
-    print(f"  📊 الاقتراح:")
+    print("  📊 الاقتراح:")
     print(f"     Entry: ${proposal.entry_price:,.2f}")
     print(f"     SL:    ${proposal.stop_loss:,.2f} (-3%)")
     print(f"     TP:    ${proposal.take_profit:,.2f} (+6%)")
@@ -180,12 +180,12 @@ async def test_step_5_execute_paper_trade(price, decision):
         btc_amount = decision.recommended_size / price
         btc_amount = round(btc_amount, 5)  # دقة Bybit
 
-        print(f"  📋 تفاصيل الصفقة:")
+        print("  📋 تفاصيل الصفقة:")
         print(f"     السعر:    ${price:,.2f}")
         print(f"     الكمية:   {btc_amount:.5f} BTC")
         print(f"     القيمة:   ${decision.recommended_size:,.2f}")
         print()
-        print(f"  ⚡ جاري التنفيذ...")
+        print("  ⚡ جاري التنفيذ...")
 
         order = await exchange.create_order(
             symbol="BTC/USDT",
@@ -194,7 +194,7 @@ async def test_step_5_execute_paper_trade(price, decision):
             amount=btc_amount,
         )
 
-        print(f"  ✅ الصفقة نُفّذت!")
+        print("  ✅ الصفقة نُفّذت!")
         print(f"     Order ID: {order.get('id')}")
         print(f"     السعر الفعلي: ${order.get('average') or order.get('price', 0):,.2f}")
         print(f"     الحالة: {order.get('status')}")
@@ -226,7 +226,7 @@ async def test_step_6_check_position():
         btc = balance.get("BTC", {})
         usdt = balance.get("USDT", {})
 
-        print(f"  💼 الرصيد بعد الصفقة:")
+        print("  💼 الرصيد بعد الصفقة:")
         print(f"     USDT:  ${usdt.get('total', 0):,.2f}")
         print(f"     BTC:   {btc.get('total', 0):.5f}")
 

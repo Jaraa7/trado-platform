@@ -8,13 +8,11 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from core.telegram_bot import handle_update, set_webhook, TOKEN
-from core.config import settings
+from core.telegram_bot import handle_update, set_webhook
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
@@ -91,9 +89,9 @@ async def telegram_webhook(request: Request):
 @app.get("/api/stats")
 async def get_stats(x_admin_token: str = Header(default="")):
     """Admin stats endpoint"""
-    # Basic auth check
-    admin_pass = os.getenv("ADMIN_PASSWORD", "trado2026")
-    # In production, use proper auth
+    admin_pass = os.getenv("ADMIN_PASSWORD", "")
+    if not admin_pass or x_admin_token != admin_pass:
+        raise HTTPException(status_code=403, detail="Forbidden")
     return {
         "active_users": 0,
         "monthly_revenue": 0,

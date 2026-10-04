@@ -1,5 +1,5 @@
 """
-TRADO Agent Registry — السجل الكامل للـ 87 agent
+TRADO Agent Registry — السجل الكامل للوكلاء (الحالة والفئة في agents/lifecycle.py)
 """
 from typing import Type
 from agents._shared.base_agent import BaseAgent
@@ -72,24 +72,43 @@ AGENT_REGISTRY: dict[str, dict[str, Type[BaseAgent]]] = {
 }
 
 
-def get_agent(agent_id: str, user_id: str = "system") -> BaseAgent:
-    """جلب agent بالاسم من أي قسم"""
+def get_agent(agent_id: str, user_id: str = "system", allow_parked: bool = False) -> BaseAgent:
+    """
+    جلب agent بالاسم من أي قسم.
+    - وكيل مدمج → يُحوَّل تلقائيًا إلى الوكيل البديل.
+    - وكيل معلّق/مُزال → خطأ ما لم يُطلب صراحة allow_parked.
+    - الفئة (TIER) تُضبط من lifecycle وقت الإنشاء.
+    """
+    from agents.lifecycle import info, resolve_alias
+    resolved = resolve_alias(agent_id)
+    meta = info(resolved)
+    if meta["status"] == "removed":
+        raise ValueError(f"Agent removed: {agent_id} ({meta.get('note', '')})")
+    if meta["status"] == "parked" and not allow_parked:
+        raise ValueError(f"Agent parked: {agent_id} — فعّله في agents/lifecycle.py")
     for dept_name, dept_agents in AGENT_REGISTRY.items():
-        if agent_id in dept_agents:
-            agent_class = dept_agents[agent_id]
+        if resolved in dept_agents:
+            agent_class = dept_agents[resolved]
+            agent_class.TIER = meta.get("tier", agent_class.TIER)
             return agent_class(user_id=user_id)
     raise ValueError(f"Agent not found: {agent_id}")
 
 
-def list_all_agents() -> dict:
-    """قائمة بكل الـ 87 agent"""
-    result = {}
+def list_all_agents(include_inactive: bool = False) -> dict:
+    """قائمة الوكلاء مع حالتهم؛ الافتراضي يعرض الفعّالين فقط (active/tool_backed)."""
+    from agents.lifecycle import info
+    result, counts = {}, {"active": 0, "tool_backed": 0, "merged": 0, "parked": 0, "removed": 0}
     for dept, agents in AGENT_REGISTRY.items():
-        result[dept] = {
-            "count": len(agents),
-            "agents": list(agents.keys())
-        }
-    result["total"] = sum(len(a) for a in AGENT_REGISTRY.values())
+        rows = []
+        for key in agents:
+            meta = info(key)
+            counts[meta["status"]] += 1
+            if include_inactive or meta["status"] in ("active", "tool_backed"):
+                rows.append({"id": key, **meta})
+        result[dept] = {"count": len(rows), "agents": rows}
+    result["total"] = counts["active"] + counts["tool_backed"]
+    result["registered"] = sum(len(a) for a in AGENT_REGISTRY.values())
+    result["by_status"] = counts
     return result
 
 

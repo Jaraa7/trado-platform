@@ -3,9 +3,8 @@ TRADO Memory System
 Short-term (Redis) + Long-term (Supabase) + Episodic memory
 """
 import json
-import asyncio
 from typing import Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from loguru import logger
 
 

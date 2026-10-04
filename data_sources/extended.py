@@ -7,14 +7,13 @@
 ✅ CoinGecko Extended — OHLCV + Market Chart (30d history)
 ✅ WebSocket Manager  — Bybit + Binance real-time streams
 """
-import os
 import json
 import asyncio
 import httpx
 import websockets
 from datetime import datetime
 from loguru import logger
-from cache import Cache
+from cache import Cache, SharedContext
 
 
 async def _get(url: str, params: dict = None, timeout: int = 10) -> any:
@@ -502,7 +501,7 @@ class ComprehensiveAnalyzer:
     async def full_market_report() -> dict:
         """تقرير شامل للسوق — يُشغَّل كل 30 دقيقة"""
         from data_sources.market import SentimentSource
-        from data_sources.whales import LongShortSource, MarketMoverAnalyzer
+        from data_sources.whales import LongShortSource
         from data_sources.news import NewsAggregator
 
         results = await asyncio.gather(

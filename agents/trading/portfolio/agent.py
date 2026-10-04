@@ -34,7 +34,7 @@ class PortfolioState:
 class PortfolioManager(BaseAgent):
     AGENT_ID = "portfolio_manager"
     AGENT_NAME = "Portfolio Manager 💼"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 2500
 
     # توزيع الأصول الافتراضي حسب الـ regime

@@ -49,9 +49,10 @@ Keyword research (AR + EN) + Technical SEO + Backlinks.""",
 )
 
 
-def make_social_manager(platform: str, focus: str):
+def make_social_manager(platform: str, focus: str, agent_id: str | None = None):
+    # agent_id صريح عند الحاجة حتى يطابق مفتاح السجل (اكتشفه nervous/conflicts)
     return create_agent_class(
-        agent_id=f"{platform.lower().replace('/', '_')}_manager",
+        agent_id=agent_id or f"{platform.lower().replace('/', '_')}_manager",
         agent_name=f"{platform} Manager",
         role_description=f"""أنت {platform} Manager، خبير في المنصة.
 تركيزك: {focus}""",
@@ -69,12 +70,12 @@ def make_social_manager(platform: str, focus: str):
     )
 
 
-TwitterManager = make_social_manager("Twitter/X", "Crypto Twitter (CT), threads, trading commentary")
+TwitterManager = make_social_manager("Twitter/X", "Crypto Twitter (CT), threads, trading commentary", agent_id="twitter_manager")
 InstagramManager = make_social_manager("Instagram", "Reels, Stories, infographics, lifestyle")
 TikTokManager = make_social_manager("TikTok", "Short-form viral education, trending sounds")
-YouTubeProducer = make_social_manager("YouTube", "Long-form tutorials, market analysis, lives")
+YouTubeProducer = make_social_manager("YouTube", "Long-form tutorials, market analysis, lives", agent_id="youtube_producer")
 LinkedInManager = make_social_manager("LinkedIn", "B2B thought leadership, professional content")
-TelegramMaster = make_social_manager("Telegram", "Daily signals, VIP groups, community")
+TelegramMaster = make_social_manager("Telegram", "Daily signals, VIP groups, community", agent_id="telegram_master")
 
 
 GrowthHackerPro = create_agent_class(

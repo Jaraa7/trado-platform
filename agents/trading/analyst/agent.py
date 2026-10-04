@@ -7,7 +7,7 @@ from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 class AnalystMaster(BaseAgent):
     AGENT_ID = "analyst_master"
     AGENT_NAME = "Analyst Master 📊"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 3000
     KNOWLEDGE_DIR = "knowledge_base/trading"
 

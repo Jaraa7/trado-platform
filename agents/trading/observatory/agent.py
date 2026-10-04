@@ -1,8 +1,6 @@
 """
 Observatory — العين التي لا تنام. مراقبة كل شيء.
 """
-import asyncio
-from typing import Optional
 from datetime import datetime
 from loguru import logger
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
@@ -11,7 +9,7 @@ from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 class Observatory(BaseAgent):
     AGENT_ID = "observatory"
     AGENT_NAME = "Observatory 👁️"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1000
 
     def __init__(self, user_id: str = "system"):

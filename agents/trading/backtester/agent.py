@@ -1,9 +1,7 @@
 """
 Backtester Pro — اختبار الاستراتيجيات على بيانات تاريخية
 """
-import asyncio
 from dataclasses import dataclass, field
-from typing import Optional
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 
 
@@ -52,7 +50,7 @@ class BacktestResult:
 class BacktesterPro(BaseAgent):
     AGENT_ID = "backtester_pro"
     AGENT_NAME = "Backtester Pro 📈"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 3000
 
     @property

@@ -2,8 +2,6 @@
 TRADO Tests — اختبارات الوحدة للـ agents
 """
 import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 # ── Risk Guardian Tests ───────────────────────────────────────────────────────
@@ -148,7 +146,7 @@ class TestCollaborationRules:
 class TestPipelineIntegration:
 
     def setup_method(self):
-        from agents.trading.risk_guardian.agent import RiskGuardian, TradeProposal
+        from agents.trading.risk_guardian.agent import TradeProposal
         self.TradeProposal = TradeProposal
 
     def test_risk_pipeline(self):
@@ -297,10 +295,12 @@ class TestBacktester:
 
 class TestRegistry:
 
-    def test_total_87_agents(self):
+    def test_registry_counts_are_honest(self):
         from agents.registry import list_all_agents
         result = list_all_agents()
-        assert result["total"] == 87
+        assert result["registered"] == 87
+        assert result["total"] == result["by_status"]["active"] + result["by_status"]["tool_backed"]
+        assert result["total"] < result["registered"]
 
     def test_all_departments_present(self):
         from agents.registry import AGENT_REGISTRY
@@ -432,97 +432,66 @@ class TestDDoSShield:
 # ── Pricing Tier Tests ────────────────────────────────────────────────────────
 
 class TestNewPricingTiers:
+    """اختبارات الباقات — مطابقة لواجهة tiers.py الحالية (single source of truth)"""
 
     def test_8_tiers_exist(self):
-        from config.tiers import TIERS, TierName
-        # 9 = 8 paid + 1 trial
-        assert len(TIERS) == 9
-        for name in TierName:
-            assert name in TIERS
-
-    def test_all_tiers_have_positive_margin(self):
-        from config.tiers import TIERS, TierName
-        for tier_name, tier in TIERS.items():
-            if tier_name in [TierName.TRIAL, TierName.ENTERPRISE]:
-                continue
-            assert tier.margin_monthly > 0, f"{tier.display_name} has negative margin"
+        from config.tiers import TIERS, TIER_SLUGS
+        assert len(TIERS) == 8
+        for slug in TIER_SLUGS:
+            assert slug in TIERS
 
     def test_pro_tier_pricing(self):
-        from config.tiers import get_tier, TierName
-        pro = get_tier(TierName.PRO)
+        from config.tiers import get_tier
+        pro = get_tier("pro")
         assert pro.price_monthly == 99
-        assert pro.margin_monthly > 0.5  # >50% margin
+        assert pro.price_annual == 990
 
-    def test_all_features_in_all_paid_tiers(self):
-        """التأكد من أن كل الباقات لها وصول لـ 87 agent"""
-        from config.tiers import TIERS, TierName
-        for tier_name, tier in TIERS.items():
-            if tier_name == TierName.TRIAL:
-                continue
-            assert tier.features.all_87_agents is True, \
-                f"{tier.display_name} doesn't have all agents access!"
+    def test_all_paid_tiers_have_signals(self):
+        from config.tiers import TIERS
+        for slug, tier in TIERS.items():
+            assert "signals" in tier.features, f"{tier.name} missing signals feature"
 
     def test_pricing_progression(self):
         """التأكد من تدرج الأسعار"""
-        from config.tiers import get_tier, TierName
-        prices = [
-            get_tier(TierName.MICRO).price_monthly,
-            get_tier(TierName.STARTER).price_monthly,
-            get_tier(TierName.PRO).price_monthly,
-            get_tier(TierName.ELITE).price_monthly,
-            get_tier(TierName.WHALE).price_monthly,
-            get_tier(TierName.INSTITUTIONAL).price_monthly,
-        ]
-        # Each tier > previous
+        from config.tiers import get_tier
+        order = ["micro", "starter", "pro", "elite", "whale", "institutional"]
+        prices = [get_tier(s).price_monthly for s in order]
         for i in range(1, len(prices)):
-            assert prices[i] > prices[i-1]
+            assert prices[i] > prices[i - 1]
 
     def test_annual_discount_around_17pct(self):
-        from config.tiers import get_tier, TierName
-        pro = get_tier(TierName.PRO)
-        discount = pro.annual_discount_pct
+        from config.tiers import get_tier
+        pro = get_tier("pro")
+        discount = (1 - pro.price_annual / (pro.price_monthly * 12)) * 100
         assert 15 <= discount <= 20
 
-    def test_mrr_calculation(self):
-        from config.tiers import calculate_total_mrr, TierName
+    def test_signal_limits_increase_with_tier(self):
+        from config.tiers import get_tier
+        micro, pro = get_tier("micro"), get_tier("pro")
+        # -1 = غير محدود
+        assert pro.signals_per_day == -1 or pro.signals_per_day > micro.signals_per_day
 
-        result = calculate_total_mrr({
-            TierName.PRO: 100,
-            TierName.ELITE: 50,
-        })
-        assert result["mrr"] > 0
-        assert result["profit"] > 0
-        assert result["margin_pct"] > 0.4    # >40% margin
+    def test_auto_execute_gated_to_elite_and_above(self):
+        from tiers import can_auto_execute
+        assert not can_auto_execute("micro")
+        assert not can_auto_execute("starter")
+        assert can_auto_execute("elite")
 
-    def test_target_year_one_profitable(self):
-        from config.tiers import calculate_total_mrr, TierName
+    def test_tier_order_helpers(self):
+        from tiers import is_higher_tier
+        assert is_higher_tier("pro", "micro")
+        assert not is_higher_tier("micro", "elite")
 
-        target = {
-            TierName.MICRO: 500,
-            TierName.STARTER: 300,
-            TierName.PRO: 250,
-            TierName.ELITE: 100,
-            TierName.WHALE: 30,
-            TierName.INSTITUTIONAL: 10,
-            TierName.FOUNDER: 5,
-            TierName.ENTERPRISE: 2,
-        }
-        result = calculate_total_mrr(target)
-        assert result["mrr"] > 100_000      # >$100K MRR
-        assert result["margin_pct"] > 0.5    # >50% margin
-        assert result["profit"] > 50_000     # >$50K profit/mo
+    def test_signals_remaining(self):
+        from tiers import signals_remaining, get_tier
+        limit = get_tier("micro").signals_per_day
+        assert signals_remaining("micro", 0) == limit
+        assert signals_remaining("micro", limit) == 0
 
-    def test_addons_exist(self):
-        from config.tiers import ADD_ONS
-        assert len(ADD_ONS) >= 5
-        assert "training_hour" in ADD_ONS
-        assert ADD_ONS["custom_bot"].price == 1999
-
-    def test_upgrade_path(self):
-        from config.tiers import get_upgrade_path, TierName
-        assert get_upgrade_path(TierName.MICRO) == TierName.STARTER
-        assert get_upgrade_path(TierName.PRO) == TierName.ELITE
-        assert get_upgrade_path(TierName.FOUNDER) is None  # أعلى باقة
+    def test_unknown_tier_falls_back_to_trial(self):
+        """باقة غير معروفة → fallback آمن إلى trial (السلوك الموثّق)"""
+        from config.tiers import get_tier
+        assert get_tier("nonexistent").slug == "trial"
 
 
 # ── New Concentration Risk Test ────────────────────────────────────────────────

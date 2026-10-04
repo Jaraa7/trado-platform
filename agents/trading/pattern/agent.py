@@ -18,7 +18,7 @@ class ChartPattern:
 class PatternRecognition(BaseAgent):
     AGENT_ID = "pattern_recognition"
     AGENT_NAME = "Pattern Recognition 🔮"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1500
 
     # قاموس النماذج

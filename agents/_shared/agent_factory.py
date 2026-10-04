@@ -13,8 +13,9 @@ def create_agent_class(
     expertise: str,
     output_format: str,
     skills: list[str],
-    model: str = "claude-sonnet-4-5",
+    model: str = "",            # مهمل؛ يبقى لتوافق الاستدعاءات القديمة
     max_tokens: int = 2000,
+    tier: str = "standard",     # frontier | standard | cheap — السجل قد يعيد ضبطها
     knowledge_dir: Optional[str] = None,
 ) -> Type[BaseAgent]:
     """
@@ -44,7 +45,8 @@ def create_agent_class(
     class GeneratedAgent(BaseAgent):
         AGENT_ID = agent_id
         AGENT_NAME = agent_name
-        MODEL = model
+        MODEL = ""                # الفئة تحكم؛ النماذج القديمة في model تُهمل عمدًا
+        TIER = tier
         MAX_TOKENS = max_tokens
         KNOWLEDGE_DIR = knowledge_dir
 

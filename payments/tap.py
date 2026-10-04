@@ -14,7 +14,7 @@ import hashlib
 import httpx
 from datetime import datetime
 from loguru import logger
-from tiers import TIERS, get_tier, TIER_ORDER
+from tiers import get_tier
 
 TAP_SECRET_KEY = os.getenv("TAP_SECRET_KEY", "")   # sk_live_...
 TAP_PUBLIC_KEY = os.getenv("TAP_PUBLIC_KEY", "")   # pk_live_...
@@ -305,7 +305,6 @@ async def _on_subscription_cancelled(event: dict, db):
 
 
 def _calc_end_date(billing: str) -> str:
-    from datetime import timedelta
     now = datetime.utcnow()
     if billing == "annual":
         return (now.replace(year=now.year + 1)).isoformat()

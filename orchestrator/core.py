@@ -1,14 +1,14 @@
 """
 TRADO Orchestrator — المخ المركزي
-ينسق بين الـ 87 agent ويتخذ القرارات النهائية
+ينسق بين الوكلاء الفعّالين ويتخذ القرارات النهائية
 """
 import asyncio
-from typing import Optional, Any
+from typing import Any
 from dataclasses import dataclass, field
 from datetime import datetime
 from loguru import logger
 
-from agents._shared.base_agent import AgentContext, AgentResponse
+from agents._shared.base_agent import AgentResponse
 from agents.trading.scanner.agent import ScannerPro
 from agents.trading.analyst.agent import AnalystMaster
 from agents.trading.risk_guardian.agent import RiskGuardian, TradeProposal
@@ -20,7 +20,7 @@ from agents.trading.sentiment.agent import SentimentAnalyzer
 from agents.trading.whale_tracker.agent import WhaleTracker
 from agents.trading.macro.agent import MacroEconomist
 from agents.trading.strategy.agent import StrategyDesigner
-from agents.trading.portfolio.agent import PortfolioManager, PortfolioState
+from agents.trading.portfolio.agent import PortfolioManager
 from agents.trading.pattern.agent import PatternRecognition
 from agents.trading.backtester.agent import BacktesterPro
 from agents.trading.arbitrage.agent import ArbitrageHunter
@@ -210,7 +210,7 @@ class TRADOOrchestrator:
         # انتظار نتيجة الـ arbitrage
         try:
             arb_result = await asyncio.wait_for(arb_task, timeout=10)
-            logger.info(f"🎯 Arbitrage scan complete")
+            logger.info("🎯 Arbitrage scan complete")
         except asyncio.TimeoutError:
             pass
 
@@ -246,7 +246,7 @@ class TRADOOrchestrator:
             "status": "running",
             "user_id": self.user_id,
             "trading_agents": 15,
-            "total_agents": 87,
+            "total_agents": __import__("agents.registry", fromlist=["list_all_agents"]).list_all_agents()["total"],
             "signals_processed": self._signals_processed,
             "signals_executed": self._signals_executed,
             "signals_vetoed": self._signals_vetoed,

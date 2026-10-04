@@ -3,7 +3,6 @@
 بقوة 30 مساعد بشري + 30 سنة خبرة
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
@@ -75,7 +74,7 @@ class TRADOProjectManager(BaseAgent):
 
     AGENT_ID = "trado_pm"
     AGENT_NAME = "TRADO Project Manager 🎯"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 4000
 
     @property
@@ -328,8 +327,8 @@ if __name__ == "__main__":
         pm = TRADOProjectManager(user_id="founder")
         print("🎯 TRADO PM جاهز للعمل!")
         print(f"الـ system prompt: {len(pm.system_prompt)} حرف")
-        print(f"الذاكرة: مفعّلة")
-        print(f"RAG: مفعّل")
+        print("الذاكرة: مفعّلة")
+        print("RAG: مفعّل")
         print()
         print("جرّب: pm.daily_standup() / pm.weekly_review() / pm.make_decision(...)")
 

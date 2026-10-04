@@ -1,5 +1,5 @@
 """TRADO Telegram Bot - Full Implementation"""
-import os, json, asyncio, httpx
+import os, json, httpx
 from datetime import datetime
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN","")

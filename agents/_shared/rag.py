@@ -2,8 +2,6 @@
 TRADO RAG System — Retrieval Augmented Generation
 Qdrant Vector DB لاسترجاع المعرفة المتخصصة لكل agent
 """
-import os
-from typing import Optional
 from pathlib import Path
 from loguru import logger
 

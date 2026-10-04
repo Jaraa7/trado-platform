@@ -1,6 +1,6 @@
 """
 TRADO Platform — FastAPI Main Application
-87 AI Agents working 24/7 for Arabic traders
+AI Agents working 24/7 for Arabic traders (count from registry)
 """
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +15,7 @@ from config.settings import settings
 
 app = FastAPI(
     title="TRADO Platform API",
-    description="منصة تداول ذكية — 87 AI Agent يعملون 24/7",
+    description="منصة تداول ذكية — وكلاء AI متخصصون يعملون 24/7",
     version="1.0.0",
 )
 
@@ -58,7 +58,7 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "agents": summary,
-        "message": "منصة تداول ذكية 🚀 — 87 AI Agent جاهزون"
+        "message": "منصة تداول ذكية 🚀 — وكلاء AI جاهزون", "agents": list_all_agents()["total"]
     }
 
 @app.get("/health")
@@ -180,6 +180,15 @@ async def get_waitlist_count():
 # ── Telegram Webhook ──────────────────────────────────────────────
 @app.post("/telegram/webhook")
 async def telegram_webhook(request: Request):
+    # تحقق من secret token (يُضبط عند استدعاء setWebhook بمعامل secret_token)
+    import os
+    expected_secret = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+    if expected_secret:
+        received = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if received != expected_secret:
+            raise HTTPException(403, "Invalid webhook secret")
+    elif settings.app_env == "production":
+        logger.warning("⚠️ TELEGRAM_WEBHOOK_SECRET غير مضبوط — الـ webhook غير محمي!")
     try:
         update = await request.json()
         from telegram_bot import handle_update
@@ -206,6 +215,14 @@ try:
     logger.info("✅ Tap payment routes loaded")
 except Exception as e:
     logger.warning(f"Tap payment routes not loaded: {e}")
+
+# ── Nervous System Routes ─────────────────────────────────────────
+try:
+    from nervous.routes import router as nervous_router
+    app.include_router(nervous_router)
+    logger.info("✅ Nervous routes loaded")
+except Exception as e:
+    logger.warning(f"Nervous routes not loaded: {e}")
 
 
 # ── Entry Point ───────────────────────────────────────────────────

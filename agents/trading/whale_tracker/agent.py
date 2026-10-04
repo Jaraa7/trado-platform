@@ -2,7 +2,7 @@
 Whale Tracker — تتبع الحيتان on-chain
 """
 import httpx
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 
 
@@ -21,7 +21,7 @@ class WhaleAlert:
 class WhaleTracker(BaseAgent):
     AGENT_ID = "whale_tracker"
     AGENT_NAME = "Whale Tracker 🐋"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1200
 
     # أنواع المحافظ
@@ -111,7 +111,7 @@ class WhaleTracker(BaseAgent):
         elif alert.tx_type == "exchange_withdrawal":
             return f"🟢 Bullish: {alert.coin} يخرج من المنصات = HODLing"
         elif alert.coin in ["USDT", "USDC"] and alert.tx_type == "minting":
-            return f"🟢 Bullish: طباعة stablecoins = liquidity جديدة للشراء"
+            return "🟢 Bullish: طباعة stablecoins = liquidity جديدة للشراء"
         else:
             return f"⚪ Neutral: حركة {alert.coin} بين محافظ"
 

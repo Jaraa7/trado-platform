@@ -19,7 +19,7 @@ class MacroEvent:
 class MacroEconomist(BaseAgent):
     AGENT_ID = "macro_economist"
     AGENT_NAME = "Macro Economist 🏛️"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 2000
 
     @property

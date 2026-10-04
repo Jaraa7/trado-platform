@@ -10,7 +10,6 @@
 """
 import os
 import asyncio
-import json
 import httpx
 
 API_KEY  = os.getenv("LEMONSQUEEZY_API_KEY", "")

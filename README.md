@@ -1,9 +1,9 @@
 # 🚀 TRADO Platform
 
-> **منصة تداول ذكية من 87 AI Agent يعملون 24/7 لخدمة المتداول العربي**
+> **منصة تداول ذكية — 36 وكيل AI فعّالًا بأدوات حقيقية (و37 معلّقًا جاهزًا للتفعيل) يعملون 24/7 لخدمة المتداول العربي**
 
 [![Tests](https://img.shields.io/badge/tests-37%2F37-brightgreen)]()
-[![Agents](https://img.shields.io/badge/agents-87%2F87-blue)]()
+[![Agents](https://img.shields.io/badge/active%20agents-36%2F87-blue)]()
 [![Python](https://img.shields.io/badge/python-3.11+-yellow)]()
 [![License](https://img.shields.io/badge/license-Private-red)]()
 

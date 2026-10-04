@@ -8,7 +8,7 @@ import hashlib
 import httpx
 from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from loguru import logger
-from db.client import get_supabase, UserDB, SubscriptionDB, audit
+from db.client import get_supabase, SubscriptionDB, audit
 from auth.service import get_current_user
 
 
@@ -254,7 +254,8 @@ def _get_billing_cycle(variant_id: str) -> str:
 # Routes
 # ════════════════════════════════════════════════════════════════════
 
-router = APIRouter(prefix="/payments", tags=["Payments"])
+# البادئة الفرعية تمنع التعارض مع payments/routes.py (Tap) — اكتشفه nervous/conflicts
+router = APIRouter(prefix="/payments/lemonsqueezy", tags=["Payments (Lemon Squeezy)"])
 
 
 @router.post("/checkout")

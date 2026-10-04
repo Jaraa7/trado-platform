@@ -18,6 +18,10 @@ from db.client import UserDB, audit, get_supabase
 # ════════════════════════════════════════════════════════════════════
 
 JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production")
+if os.getenv("APP_ENV", "").lower() == "production" and JWT_SECRET == "change-me-in-production":
+    raise RuntimeError(
+        "🚨 JWT_SECRET غير مضبوط في الإنتاج! أضفه في Doppler/Fly secrets قبل التشغيل."
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24 * 7    # 7 days
 REFRESH_EXPIRATION_DAYS = 30
@@ -177,7 +181,6 @@ class AuthService:
         }).execute()
 
         # إنشاء trial subscription
-        from agents.financial.agents import TIERS    # سننقلها
         sb.table("subscriptions").insert({
             "user_id": user["id"],
             "tier": "trial",

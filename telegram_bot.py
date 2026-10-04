@@ -138,7 +138,7 @@ async def cmd_opportunities(chat_id: int, tier: str):
             await send(chat_id, fmt_opportunity(o), reply_markup=kb(
                 [("🎯 Analyze", f"opp_an_{o['id']}"), ("⏭️ Skip", f"opp_sk_{o['id']}")],
             ))
-    except Exception as e:
+    except Exception:
         await send(chat_id, "⚠️ Could not load opportunities.")
 
 async def cmd_overview(chat_id: int, tier: str):
@@ -176,7 +176,7 @@ async def cmd_upgrade(chat_id: int, tier: str):
         nt = get_tier(slug)
         price = f"${nt.price_monthly}/mo" if nt.price_monthly > 0 else "Free"
         lines.append(f"• <b>{nt.name}</b> — {price}")
-    lines.append(f"\n🔗 tradoai.net/#pricing")
+    lines.append("\n🔗 tradoai.net/#pricing")
     await send(chat_id, "\n".join(lines),
                reply_markup=kb([("🔙 Menu", "back_main")]))
 
@@ -218,7 +218,7 @@ async def handle_callback(cb: dict):
     elif data == "back_main":
         await edit(chat_id, msg_id, "🏠 <b>Main Menu</b>", reply_markup=MAIN_MENU)
     elif data.startswith("exec_"):
-        await send(chat_id, f"✅ Trade submitted! Confirm at tradoai.net/dashboard")
+        await send(chat_id, "✅ Trade submitted! Confirm at tradoai.net/dashboard")
     elif data.startswith("dis_"):
         await tg("deleteMessage", chat_id=chat_id, message_id=msg_id)
     elif data.startswith("opp_sk_"):
@@ -242,6 +242,16 @@ async def handle_update(update: dict):
             "/upgrade":       lambda: cmd_upgrade(chat_id, "pro"),
             "/settings":      lambda: cmd_settings(chat_id),
         }
+
+        # أوامر المالك (/stop /resume /status /approve_… ) — تُقبل من TELEGRAM_ADMIN_CHAT_ID فقط
+        try:
+            from nervous.owner_commands import OwnerCommands
+            owner_reply = OwnerCommands().handle(chat_id, text)
+        except Exception as ex:  # noqa: BLE001
+            logger.warning(f"owner command failed: {ex}"); owner_reply = None
+        if owner_reply:
+            await send(chat_id, owner_reply)
+            return
 
         cmd = text.split()[0].split("@")[0] if text.startswith("/") else None
         if cmd and cmd in commands:

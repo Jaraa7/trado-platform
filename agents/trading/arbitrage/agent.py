@@ -1,7 +1,6 @@
 """
 Arbitrage Hunter — صيد فرص الـ arbitrage بين المنصات
 """
-import asyncio
 from dataclasses import dataclass
 from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
 
@@ -26,7 +25,7 @@ class ArbitrageOpportunity:
 class ArbitrageHunter(BaseAgent):
     AGENT_ID = "arbitrage_hunter"
     AGENT_NAME = "Arbitrage Hunter 🎯"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1200
 
     # رسوم المنصات التقريبية

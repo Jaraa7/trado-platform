@@ -1,6 +1,4 @@
-import asyncio
 import httpx
-from datetime import datetime
 
 async def send_telegram(token: str, chat_id: str, message: str):
     """Send message via Telegram Bot API"""

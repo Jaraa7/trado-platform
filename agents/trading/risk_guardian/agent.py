@@ -31,7 +31,7 @@ class RiskDecision:
 class RiskGuardian(BaseAgent):
     AGENT_ID = "risk_guardian"
     AGENT_NAME = "Risk Guardian 🛡️"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1500
 
     # القواعد الصارمة

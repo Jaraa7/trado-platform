@@ -2,10 +2,10 @@
 🟫 Financial Department — 12 Agents
 قسم المالية: استدامة المشروع بهامش 40%+
 """
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime
 from agents._shared.agent_factory import create_agent_class
-from agents._shared.base_agent import BaseAgent, AgentContext, AgentResponse
+from agents._shared.base_agent import BaseAgent
 
 
 # ═════════════════════════════════════════════════════════════════════
@@ -73,7 +73,7 @@ class CostBreakdown:
 class CostTracker(BaseAgent):
     AGENT_ID = "cost_tracker"
     AGENT_NAME = "Cost Tracker 📉"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1500
 
     def __init__(self, user_id: str = "system"):
@@ -172,7 +172,7 @@ class Subscription:
 class SubscriptionManager(BaseAgent):
     AGENT_ID = "subscription_manager"
     AGENT_NAME = "Subscription Manager 📅"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1200
 
     @property
@@ -206,7 +206,7 @@ class SubscriptionManager(BaseAgent):
 class PaymentGatewayManager(BaseAgent):
     AGENT_ID = "payment_gateway"
     AGENT_NAME = "Payment Gateway Manager 💳"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1000
 
     GATEWAY_ROUTING = {
@@ -292,7 +292,7 @@ class FinancialMetrics:
 class FinancialForecaster(BaseAgent):
     AGENT_ID = "financial_forecaster"
     AGENT_NAME = "Financial Forecaster 🔮"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 2500
 
     @property
@@ -351,7 +351,7 @@ TierDesigner = create_agent_class(
 class TaxCompliance(BaseAgent):
     AGENT_ID = "tax_compliance"
     AGENT_NAME = "Tax & Compliance 🧾"
-    MODEL = "claude-sonnet-4-5"
+    TIER = "frontier"   # كان claude-sonnet-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1500
 
     VAT_RATES = {
@@ -393,7 +393,7 @@ class TaxCompliance(BaseAgent):
 class AffiliateManager(BaseAgent):
     AGENT_ID = "affiliate_manager"
     AGENT_NAME = "Affiliate Manager 🤝"
-    MODEL = "claude-haiku-4-5"
+    TIER = "cheap"      # كان claude-haiku-4-5؛ الفئة تحكم الآن
     MAX_TOKENS = 1200
 
     TIERS = {
