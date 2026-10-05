@@ -121,17 +121,22 @@ class Brain:
 
     # ── الحلقة ────────────────────────────────────────────────────────
     async def run_forever(self, interval_s: int = 3600):
+        from core.observability import init_sentry, brain_checkin
+        init_sentry("brain")
         logger.info("🧠 nervous brain started")
         last_daily = last_weekly = None
         while True:
             try:
+                brain_checkin("in_progress")
                 await self.tick()
+                brain_checkin("ok")
                 now = datetime.now(timezone.utc)
                 if now.hour == 6 and last_daily != now.date():
                     self.notify(self.daily_summary()); last_daily = now.date()
                 if now.weekday() == 4 and now.hour == 12 and last_weekly != now.date():
                     self.notify("📊 تقرير الجمعة\n" + self.daily_summary()); last_weekly = now.date()
             except Exception as ex:  # noqa: BLE001
+                brain_checkin("error")
                 logger.exception(f"tick failed: {ex}")
             await asyncio.sleep(interval_s)
 

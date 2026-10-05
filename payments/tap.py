@@ -231,19 +231,23 @@ async def _on_payment_success(event: dict, db):
         "tier":            tier,
         "status":          "active",
         "billing_cycle":   billing,
+        "amount":          amount,
+        "currency":        event.get("currency", "USD"),
         "current_period_end": end_date,
         "tap_subscription_id": event.get("id"),
-    }).execute()
+    }, on_conflict="tap_subscription_id").execute()
 
-    sb.table("payments").insert({
+    # أعمدة مطابقة لمخطط payments؛ provider_payment_id فريد فيمنع تكرار التسجيل إن أعاد Tap الإرسال
+    sb.table("payments").upsert({
         "user_id":     user_id,
         "amount":      amount,
+        "subtotal":    amount,
         "currency":    event.get("currency", "USD"),
-        "status":      "completed",
-        "gateway":     "tap",
-        "gateway_id":  event.get("id"),
-        "tier":        tier,
-    }).execute()
+        "status":      "succeeded",
+        "provider":    "tap",
+        "provider_payment_id": event.get("id"),
+        "paid_at":     datetime.utcnow().isoformat(),
+    }, on_conflict="provider_payment_id").execute()
 
     # أرسل إشعار Telegram
     from db.client import UserDB

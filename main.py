@@ -11,7 +11,9 @@ from orchestrator.core import TRADOOrchestrator
 from agents.registry import AGENT_REGISTRY, get_agent, list_all_agents
 from agents._shared.base_agent import AgentContext
 from config.settings import settings
+from core.observability import init_sentry
 
+init_sentry("api")
 
 app = FastAPI(
     title="TRADO Platform API",

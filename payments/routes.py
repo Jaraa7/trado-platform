@@ -63,7 +63,7 @@ def _assert_owns_subscription(user: dict, subscription_id: str):
     row = (
         db.table("subscriptions")
         .select("user_id")
-        .eq("provider_subscription_id", subscription_id)
+        .eq("tap_subscription_id", subscription_id)
         .limit(1)
         .execute()
     )
