@@ -21,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt pytest pytest-asyncio pytest-cov
+          pip install -r requirements-deploy.txt pytest pytest-asyncio pytest-cov
 
       - name: Run tests
         run: |

@@ -16,7 +16,6 @@ qdrant-client>=1.9.0
 # Trading
 ccxt>=4.3.0
 pandas>=2.2.0
-pandas-ta>=0.3.14b
 numpy>=1.26.0
 ta-lib>=0.4.28
 
