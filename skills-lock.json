@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "skills": {
+    "ccxt-cli": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-cli/SKILL.md",
+      "computedHash": "9fd5669e058e1bfd33101c1f26c53d44aa842b78ca3e016855b29b5155457fbe"
+    },
+    "ccxt-csharp": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-csharp/SKILL.md",
+      "computedHash": "f3290c6546943ee70f237fd8c228559831f57091c596fa19d213b71b605d87a1"
+    },
+    "ccxt-go": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-go/SKILL.md",
+      "computedHash": "1debbd2a5147e29e8a355eb9f59b19cbd38d6147655bdd601fb37004fd764b3a"
+    },
+    "ccxt-java": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-java/SKILL.md",
+      "computedHash": "db8572422eb4f1872b162568cc037a7bcad09a56fd2753de70a4c974f5fb003a"
+    },
+    "ccxt-mcp": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-mcp/SKILL.md",
+      "computedHash": "64991e93d7d1c8d5de25199ab6bb6410994bb71d98e8c16dcce74f5a2a690fb9"
+    },
+    "ccxt-php": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-php/SKILL.md",
+      "computedHash": "a0e461c3a113ad966a173df8c4e50446040b1280396bf4f8b68a9949fc164dbb"
+    },
+    "ccxt-python": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-python/SKILL.md",
+      "computedHash": "7e5f3e5dbb7256ea611130a78b1495a9a0c1b542de29ebba9c055a5ae964d5f8"
+    },
+    "ccxt-rust": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-rust/SKILL.md",
+      "computedHash": "1dc92dec94e6ac0c6368bb497748f884ee6f8b6bacf7a74772634a50dd063288"
+    },
+    "ccxt-typescript": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ccxt-typescript/SKILL.md",
+      "computedHash": "c258cdf3cf8dcd07e514da71cc59bb39b607506482e45410637bd817c3811908"
+    },
+    "new-exchange": {
+      "source": "ccxt/ccxt",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/new-exchange/SKILL.md",
+      "computedHash": "e3d1cc73aea1cf869a58d4c6672fe07a00e4fa5f4aea68f6b50d7eba52dbbfc2"
+    }
+  }
+}

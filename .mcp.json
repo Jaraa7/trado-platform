@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "bybit": {
+      "command": "npx",
+      "args": ["-y", "bybit-official-trading-server@latest"],
+      "env": {
+        "BYBIT_API_KEY": "${BYBIT_API_KEY}",
+        "BYBIT_API_SECRET": "${BYBIT_SECRET}",
+        "BYBIT_TESTNET": "${BYBIT_TESTNET:-true}"
+      }
+    },
+    "ccxt": {
+      "command": "npx",
+      "args": ["-y", "ccxt-mcp"],
+      "env": {
+        "CCXT_MCP_LOAD_ENV_KEYS": "false"
+      }
+    }
+  }
+}

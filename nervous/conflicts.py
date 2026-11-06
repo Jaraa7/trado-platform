@@ -90,7 +90,7 @@ class ConflictChecker:
     def check_tables(self):
         tables = defaultdict(list)
         for f in sorted((self.root / "db" / "migrations").glob("*.sql")):
-            for m in re.finditer(r'CREATE TABLE(?: IF NOT EXISTS)?\s+([a-z_]+)', f.read_text(encoding="utf-8"), re.I):
+            for m in re.finditer(r'CREATE TABLE(?: IF NOT EXISTS)?\s+([a-z_][a-z0-9_]*)', f.read_text(encoding="utf-8"), re.I):
                 tables[m.group(1).lower()].append(f.name)
         for t, files in tables.items():
             if len(files) > 1:
