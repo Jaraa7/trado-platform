@@ -73,3 +73,12 @@ Payment gateway, subscription tiers, customer chatbots, marketing agents, HFT/co
 
 ## Working style the owner requires
 Every proposed step must be executable and concrete. No "consider doing X". Open a PR per week-step; the owner reviews Fridays.
+
+## Code map (week 1, branch feat/trado-100-foundation)
+- `trado100/genome.py` bounded genes, mutate (±10–20% on 1–2 genes), crossover — risk_pct ≤ 2%, leverage ≤ 3 enforced by `fix()`.
+- `trado100/families.py` 10 signal families (numpy only; `llm_judge` falls back to a rule vote until `ctx["llm"]` is wired).
+- `trado100/guardian.py` Risk Guardian (`check()`, `Breach` ⇒ manager dies).
+- `trado100/manager.py` state + one shared `step()` (live == gate backtest). `arena.py` population, death rules, heirs, weekly lessons.
+- `trado100/worker.py` cloud loop (Fly process `t100`): every closed 15m bar +20s. Resumes from Supabase after restart. `feed.py` Bybit public REST.
+- Offline check: `python -m trado100.sim`; tests: `pytest tests/test_trado100.py`.
+- Known week-1 limits: bars not ticks (15m decision latency), stops checked per bar, paper funding payments not accrued, synthetic data has no real edge — only live paper results count.
