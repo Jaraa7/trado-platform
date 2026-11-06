@@ -59,7 +59,7 @@ trend · breakout · mean_reversion · scalp · grid · funding_basis · regime_
 Only `llm_judge` (10 managers) calls an LLM (Gemini Flash-Lite) and only on ≥ 1h timeframes. Everything else is numpy.
 
 ## Supabase tables (project `mmuupwishkejogasopez`)
-`managers` · `trades` · `deaths` · `lessons` · `regime_stats` · `treasury`
+`t100_managers` · `t100_trades` · `t100_deaths` · `t100_lessons` · `t100_regime_stats` · `t100_treasury` (prefixed because `public.trades` already exists for SaaS users; RLS on, no policies = service role only)
 Migration: `db/migrations/004_trado100.sql`. Lessons become active only after two consecutive weekly post-mortems agree; harmful lessons auto-retire after one month of worse performance.
 
 ## Runtime (Fly app `trado-bot`, region sin)
