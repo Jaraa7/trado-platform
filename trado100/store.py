@@ -14,7 +14,12 @@ class InMemoryStore:
         self.managers, self.trades, self.deaths, self.lessons, self.treasury = {}, [], [], [], []
         self._n = 0
 
+    NOT_NULL = ("family", "variant", "generation", "status", "stage", "genome", "universe", "balance")
+
     def create_manager(self, row: dict) -> int:
+        # mimic the DB: explicit NULL in a NOT NULL column is an error (born_at has a default, so must be absent)
+        assert row.get("born_at", "absent") != None, "born_at=None would violate NOT NULL"  # noqa: E711
+        assert all(row.get(k) is not None for k in self.NOT_NULL if k in row)
         self._n += 1
         self.managers[self._n] = dict(row, id=self._n)
         return self._n

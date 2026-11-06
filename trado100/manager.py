@@ -142,8 +142,7 @@ class Manager:
             },
             "start_balance": self.start_balance, "balance": round(self.balance, 4),
             "peak_balance": round(self.peak, 4),
-            "frozen_until": None, "born_at": None, "last_trade_at": None,
-        }
+        }  # born_at/frozen_until/last_trade_at are never sent here: born_at is NOT NULL with a DB default
 
     @classmethod
     def from_row(cls, r: dict) -> "Manager":
