@@ -112,15 +112,15 @@ def test_idle_and_stuck_death():
 def test_correlation_needs_same_trade_not_just_same_day():
     a, _ = _arena()
     ms = []
-    for i in range(3):
+    for i in range(5):
         m = mk(); m.id = a.store.create_manager(m.to_row()); a.managers[m.id] = m
         m.closed.append({"symbol": "A", "side": "long", "entry_price": 1, "exit_price": 1, "qty": 1,
                          "stop_price": 1, "target_price": 1, "fees": 0, "pnl": -5, "leverage": 1,
                          "reason_in": "", "reason_out": "stop",
-                         "opened_ts": 1000 + (i * BAR_MS if i == 2 else 0), "closed_ts": 2000})
+                         "opened_ts": 1000 + (i * BAR_MS if i == 4 else 0), "closed_ts": 2000})
         ms.append(m)
     for m in ms: a.flush_trades(m)
-    a._correlation_rule(DAY)                 # 2 entered on the same bar, 1 later -> no kill
+    a._correlation_rule(DAY)                 # 4 entered on the same bar, 1 later -> below the 5 threshold, no kill
     assert all(m.status != "dead" for m in ms)
     a.today_losses.clear()
     for m in ms:
@@ -209,3 +209,19 @@ def test_worker_boot_resume_and_cycle():
     assert w2.last_ts == w.last_ts
     assert len(w2.arena.managers) == len([r for r in store.managers.values() if r["status"] != "dead"])
     assert len(store.managers) == len(store.managers)        # no duplicates created on resume
+
+
+def test_diversity_guard_keeps_three_seats_even_if_gate_rejects_everyone():
+    a, w = _arena()
+    ms = []
+    for v in range(3):
+        m = mk("grid"); m.variant, m.universe = v, ["A", "B"]
+        m.id = a.store.create_manager(m.to_row()); a.managers[m.id] = m; ms.append(m)
+    import trado100.arena as AR
+    AR.GATE_MIN_RET = 9.9                    # impossible gate: nobody passes
+    try:
+        a.kill(ms[0], "drawdown", 5 * DAY)
+        a.end_step(5 * DAY)
+    finally:
+        AR.GATE_MIN_RET = 0.0
+    assert a.seats()["grid"] == 3

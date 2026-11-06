@@ -13,6 +13,8 @@ GATE_MIN_TRADES = 3
 GATE_MIN_RET = 0.0
 GATE_MAX_DD = 0.12
 SYMS_PER_MANAGER = 5
+CORR_MIN_MANAGERS = 5      # spec said 3; with 10 near-clone variants per family 3 is routine (sim: ~6 deaths/day)
+CORR_COOLDOWN = 7 * DAY    # at most one correlation death per family per week
 
 
 def backtest_gate(proto: Manager, history: Dict[str, np.ndarray], n_bars: int,
@@ -51,6 +53,7 @@ class Arena:
         self.pending_lessons: Dict[tuple, int] = {}
         self.deaths_log: List[dict] = []        # in-memory mirror for weekly post-mortem
         self.today_losses: Dict[tuple, set] = {}
+        self.last_corr: Dict[str, int] = {}
         self.kill_switch = False
         self.blind = False
         self.blackout = False
@@ -89,7 +92,10 @@ class Arena:
                 if not self._spawn(fam, v, None, ts, max_tries):
                     self.vacancies.append({"family": fam, "variant": v, "tries": 0})
 
-    def _spawn(self, family: str, variant: int, parent: Optional[Manager], ts: int, max_tries: int) -> Optional[Manager]:
+    def _spawn(self, family: str, variant: int, parent: Optional[Manager], ts: int, max_tries: int,
+               force: bool = False) -> Optional[Manager]:
+        """force=True (diversity guard): if nothing passes the gate, take the best-scoring candidate."""
+        best, best_ret = None, -9.0
         survivors = sorted((m for m in self.managers.values() if m.family == family and m.status != "dead"),
                            key=lambda m: m.equity(), reverse=True)
         for _ in range(max_tries):
@@ -107,7 +113,9 @@ class Arena:
             res = backtest_gate(proto, self.history, self.gate_bars, self.ctx_fn)
             if res["ok"]:
                 return self._birth(proto)
-        return None
+            if force and res["ret"] > best_ret:
+                best, best_ret = proto, res["ret"]
+        return self._birth(best) if (force and best is not None) else None
 
     # ------------------------------------------------------------------ feeding
     def feed(self, sym: str, ctx: Optional[dict] = None):
@@ -202,11 +210,12 @@ class Arena:
     def _correlation_rule(self, ts: int):
         fams = {}
         for (fam, _sym, _side, _opened), ids in self.today_losses.items():
-            if len(ids) >= 3:
+            if len(ids) >= CORR_MIN_MANAGERS:
                 fams.setdefault(fam, set()).update(ids)
         for fam, ids in fams.items():
             cands = [self.managers[i] for i in ids if self.managers[i].status != "dead"]
-            if cands:
+            if cands and ts - self.last_corr.get(fam, -CORR_COOLDOWN) >= CORR_COOLDOWN:
+                self.last_corr[fam] = ts
                 self.kill(min(cands, key=lambda x: x.equity() / x.start_balance), "correlation", ts)
         self.today_losses.clear()
 
@@ -217,11 +226,15 @@ class Arena:
         for v in self.vacancies:
             if done >= max_births:
                 remaining.append(v); continue
+            if v["tries"] and (ts // BAR_MS) % min(2 ** v["tries"], 96) != 0:
+                remaining.append(v); continue        # back off: failed seats retry 2,4,8… bars later
             fam, parent = v["family"], v.get("parent")
             if parent is None:
                 live = [m for m in self.managers.values() if m.family == fam and m.status != "dead"]
                 parent = max(live, key=lambda x: x.equity()) if live else None
-            heir = self._spawn(fam, v["variant"], parent, ts, max_tries=12)
+            live_n = sum(1 for m in self.managers.values() if m.family == fam and m.status != "dead")
+            heir = self._spawn(fam, v["variant"], parent, ts, max_tries=12,
+                               force=live_n < guardian.MIN_SEATS_PER_FAMILY)
             done += 1
             if heir is None:
                 v["tries"] += 1
