@@ -241,6 +241,16 @@ class Arena:
                 remaining.append(v)
         self.vacancies = remaining
 
+    def load_lessons(self):
+        """Restore active family lessons after a restart (they only live in t100_lessons)."""
+        for l in self.store.load_active_lessons():
+            fam, text = l["family"], l["lesson"]
+            if fam in self.family_bias and text not in [b["text"] for b in self.family_bias[fam]]:
+                bias = {"text": text}
+                if "drawdown" in text or "daily_loss" in text:
+                    bias["risk_mult"] = 0.8
+                self.family_bias[fam].append(bias)
+
     def seats(self) -> Dict[str, int]:
         out = {f: 0 for f in G.FAMILIES}
         for m in self.managers.values():
