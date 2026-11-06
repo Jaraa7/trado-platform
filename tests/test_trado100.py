@@ -144,6 +144,17 @@ def test_row_roundtrip_is_json_safe_and_lossless():
     assert m2.status == "alive" and m2.positions["A"]["side"] == "short"
 
 
+def test_lessons_survive_restart():
+    a, _ = _arena()
+    a.store.save_lesson({"family": "grid", "lesson": "grid: repeated deaths by drawdown two weeks running",
+                         "confirmations": 2, "active": True})
+    b = Arena(a.store, dict(a.history), random.Random(1), gate_bars=100)
+    b.load_lessons()
+    assert b.family_bias["grid"][0]["risk_mult"] == 0.8
+    b.load_lessons()
+    assert len(b.family_bias["grid"]) == 1          # idempotent
+
+
 def test_weekly_lesson_needs_two_consecutive_weeks():
     a, _ = _arena()
     for wk in (10, 11):

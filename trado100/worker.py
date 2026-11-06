@@ -55,6 +55,7 @@ class Worker:
             res = await asyncio.gather(*(self.feed.funding_history(x) for x in part))
             self.fh.update(dict(zip(part, res)))
         self.arena.history = {s: self.full[s] for s in syms if s in self.full}
+        self.arena.load_lessons()
         if rows:
             for r in rows:
                 m = Manager.from_row(r)
