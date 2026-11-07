@@ -39,3 +39,5 @@ Thumbs.db
 *.sqlite
 data/raw/
 knowledge_base/generated/
+data/hist/
+data/evolved/
