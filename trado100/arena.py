@@ -1,6 +1,6 @@
 """The population: 100 managers, nonstop. Death rules, inheritance, evolution, gate."""
 from __future__ import annotations
-import random
+import json, os, random
 from typing import Callable, Dict, List, Optional
 import numpy as np
 
@@ -15,6 +15,17 @@ GATE_MAX_DD = 0.12
 SYMS_PER_MANAGER = 5
 CORR_MIN_MANAGERS = 5      # spec said 3; with 10 near-clone variants per family 3 is routine (sim: ~6 deaths/day)
 CORR_COOLDOWN = 7 * DAY    # at most one correlation death per family per week
+
+
+def load_seeds(path: Optional[str] = None) -> Dict[str, List[dict]]:
+    """Evolved genomes (walk-forward survivors) per family. Missing/invalid file -> no seeds."""
+    path = path or os.path.join(os.path.dirname(__file__), "seeds.json")
+    try:
+        with open(path) as fh:
+            raw = json.load(fh)["seeds"]
+        return {f: [G.fix(f, e["genome"]) for e in v] for f, v in raw.items() if f in G.FAMILY_GENES}
+    except Exception:
+        return {}
 
 
 def backtest_gate(proto: Manager, history: Dict[str, np.ndarray], n_bars: int,
@@ -54,6 +65,7 @@ class Arena:
         self.deaths_log: List[dict] = []        # in-memory mirror for weekly post-mortem
         self.today_losses: Dict[tuple, set] = {}
         self.last_corr: Dict[str, int] = {}
+        self.seeds = load_seeds()
         self.kill_switch = False
         self.blind = False
         self.blackout = False
@@ -92,6 +104,13 @@ class Arena:
                 if not self._spawn(fam, v, None, ts, max_tries):
                     self.vacancies.append({"family": fam, "variant": v, "tries": 0})
 
+    def _seed_genome(self, family: str) -> Optional[dict]:
+        """70% of the 'fresh' slot starts from a mutated walk-forward survivor (new births only)."""
+        pool = self.seeds.get(family)
+        if pool and self.rng.random() < 0.7:
+            return G.mutate(family, self.rng.choice(pool), self.rng)
+        return None
+
     def _spawn(self, family: str, variant: int, parent: Optional[Manager], ts: int, max_tries: int,
                force: bool = False) -> Optional[Manager]:
         """force=True (diversity guard): if nothing passes the gate, take the best-scoring candidate."""
@@ -107,7 +126,7 @@ class Arena:
             elif survivors and r < 0.9:
                 g = G.mutate(family, survivors[0].genome, self.rng)
             else:
-                g = G.random_genome(family, self.rng)
+                g = self._seed_genome(family) or G.random_genome(family, self.rng)
             g = self._apply_bias(family, g)
             proto = self._new_proto(family, variant, g, parent, ts)
             res = backtest_gate(proto, self.history, self.gate_bars, self.ctx_fn)

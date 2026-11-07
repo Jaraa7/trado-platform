@@ -1,0 +1,231 @@
+{
+ "_note": "Walk-forward survivors (passed holdout in 2 different regimes, >=40 trades, DD<12%). Used ONLY as a start point for NEW births via mutation; live managers untouched. Not proof of edge.",
+ "seeds": {
+  "breakout": [
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 3,
+     "atr_stop": 3.5,
+     "rr": 2.225527,
+     "lookback": 59,
+     "vol_mult": 1.84166
+    },
+    "src": "recent",
+    "oos_ret": 0.0013,
+    "oos_trades": 155,
+    "worst_dd": 0.0456
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 3,
+     "atr_stop": 3.5,
+     "rr": 2.225527,
+     "lookback": 59,
+     "vol_mult": 2.151994
+    },
+    "src": "recent",
+    "oos_ret": 0.0044,
+    "oos_trades": 126,
+    "worst_dd": 0.0318
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 3,
+     "atr_stop": 3.5,
+     "rr": 2.023577,
+     "lookback": 59,
+     "vol_mult": 2.005936
+    },
+    "src": "recent",
+    "oos_ret": 0.0006,
+    "oos_trades": 149,
+    "worst_dd": 0.0329
+   },
+   {
+    "genome": {
+     "tf": 3,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 2.775393,
+     "rr": 2.045055,
+     "lookback": 61,
+     "vol_mult": 1.99214
+    },
+    "src": "oldhold",
+    "oos_ret": 0.01,
+    "oos_trades": 277,
+    "worst_dd": 0.0521
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.5,
+     "rr": 1.628559,
+     "lookback": 65,
+     "vol_mult": 1.974975
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0148,
+    "oos_trades": 171,
+    "worst_dd": 0.0431
+   },
+   {
+    "genome": {
+     "tf": 3,
+     "risk_pct": 0.003,
+     "leverage": 3,
+     "atr_stop": 3.109714,
+     "rr": 1.83526,
+     "lookback": 61,
+     "vol_mult": 1.99214
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0093,
+    "oos_trades": 253,
+    "worst_dd": 0.0475
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.5,
+     "rr": 1.589809,
+     "lookback": 65,
+     "vol_mult": 1.974975
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0134,
+    "oos_trades": 166,
+    "worst_dd": 0.0376
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.5,
+     "rr": 2.097576,
+     "lookback": 65,
+     "vol_mult": 1.974975
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0102,
+    "oos_trades": 156,
+    "worst_dd": 0.0475
+   }
+  ],
+  "regime_switch": [
+   {
+    "genome": {
+     "tf": 3,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.081184,
+     "rr": 2.117215,
+     "er_n": 27,
+     "er_thr": 0.5,
+     "fast": 10,
+     "slow": 45
+    },
+    "src": "recent",
+    "oos_ret": 0.0207,
+    "oos_trades": 115,
+    "worst_dd": 0.0243
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003356,
+     "leverage": 1,
+     "atr_stop": 3.057748,
+     "rr": 2.740143,
+     "er_n": 19,
+     "er_thr": 0.5,
+     "fast": 16,
+     "slow": 59
+    },
+    "src": "recent",
+    "oos_ret": 0.0035,
+    "oos_trades": 138,
+    "worst_dd": 0.0421
+   },
+   {
+    "genome": {
+     "tf": 3,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.5,
+     "rr": 1.954336,
+     "er_n": 14,
+     "er_thr": 0.416442,
+     "fast": 9,
+     "slow": 70
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0021,
+    "oos_trades": 238,
+    "worst_dd": 0.053
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 2.89568,
+     "rr": 2.092696,
+     "er_n": 17,
+     "er_thr": 0.5,
+     "fast": 9,
+     "slow": 70
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0123,
+    "oos_trades": 198,
+    "worst_dd": 0.0403
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 2.934886,
+     "rr": 2.092696,
+     "er_n": 17,
+     "er_thr": 0.5,
+     "fast": 9,
+     "slow": 62
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0091,
+    "oos_trades": 201,
+    "worst_dd": 0.0414
+   },
+   {
+    "genome": {
+     "tf": 4,
+     "risk_pct": 0.003,
+     "leverage": 1,
+     "atr_stop": 3.5,
+     "rr": 1.771041,
+     "er_n": 17,
+     "er_thr": 0.434873,
+     "fast": 10,
+     "slow": 70
+    },
+    "src": "oldhold",
+    "oos_ret": 0.0077,
+    "oos_trades": 194,
+    "worst_dd": 0.0349
+   }
+  ]
+ }
+}
