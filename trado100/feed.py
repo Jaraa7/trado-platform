@@ -9,10 +9,12 @@ BASE = "https://api.bybit.com"
 BAR_MS = 900_000
 
 
-# Equity / commodity / FX perps follow market hours and gap; keep the arena crypto-only.
-NON_CRYPTO = {"XAU", "XAG", "XPT", "XPD", "TSLA", "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "GOOG", "META",
-              "COIN", "MSTR", "HOOD", "CRCL", "PLTR", "AMD", "NFLX", "SPY", "QQQ", "EUR", "GBP", "JPY",
-              "OIL", "WTI", "BRENT", "NG", "COPPER"}
+# Crypto-only arena: Bybit also lists tokenized stocks/ETFs/commodities (QQQ, SOXS, TSLA, XAU ...)
+# that follow market hours and gap. A deny-list always leaks, so only known crypto majors are allowed.
+CRYPTO_CORE = set("""BTC ETH SOL XRP DOGE ADA AVAX LINK BNB TON DOT LTC BCH NEAR APT ARB OP SUI SEI INJ ATOM FIL TRX UNI
+AAVE MKR ETC XLM HBAR TIA WLD 1000PEPE 1000SHIB 1000BONK 1000FLOKI ENA ONDO JUP RUNE FET RENDER ICP ALGO
+STX IMX GRT LDO CRV SAND MANA AXS GALA THETA EOS XTZ FTM S POL PENDLE TAO KAS WIF JTO PYTH STRK ZRO
+TRUMP VIRTUAL AI16Z FARTCOIN PNUT HYPE XMR DYDX SNX COMP 1INCH ENS BLUR EIGEN ETHFI""".split())
 
 
 class Feed:
@@ -38,7 +40,7 @@ class Feed:
         if not res:
             return {}
         rows = [t for t in res["list"] if t["symbol"].endswith("USDT") and "-" not in t["symbol"]
-                and t["symbol"][:-4] not in NON_CRYPTO]
+                and t["symbol"][:-4] in CRYPTO_CORE]
         rows.sort(key=lambda t: float(t.get("turnover24h") or 0), reverse=True)
         return {t["symbol"]: float(t.get("fundingRate") or 0) for t in rows[:top]}
 
