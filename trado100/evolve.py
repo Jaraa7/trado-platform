@@ -97,6 +97,8 @@ def main():
     ap.add_argument("--windows", type=int, default=4)
     ap.add_argument("--window-days", type=int, default=28)
     ap.add_argument("--holdout-days", type=int, default=180)
+    ap.add_argument("--holdout-first", action="store_true",
+                    help="hide the OLDEST holdout-days instead of the newest (replication in a different regime)")
     ap.add_argument("--baseline", type=int, default=12)
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 2)
     ap.add_argument("--families", default=",".join(G.FAMILIES))
@@ -109,13 +111,20 @@ def main():
     assert len(syms) >= 4, f"need >=4 symbols in {a.data}"
     t0 = max(h[0][0] for h in _D["hist"].values())
     t1 = min(h[-1][0] for h in _D["hist"].values())
-    hold_start = t1 - a.holdout_days * DAY
-    first_end = t0 + (a.window_days + 10) * DAY
+    if a.holdout_first:                 # hold = [h_lo, h_hi] at the start of history, train = everything after
+        h_lo = t0 + 10 * DAY            # 10d warm-up for indicators
+        h_hi = h_lo + a.holdout_days * DAY
+        first_end, hold_start = h_hi + a.window_days * DAY, t1
+    else:                               # hold = the newest holdout-days
+        h_hi = t1
+        h_lo = t1 - a.holdout_days * DAY
+        first_end, hold_start = t0 + (a.window_days + 10) * DAY, h_lo
     assert hold_start > first_end, "not enough history for train + holdout"
     bars = a.window_days * 96
     fams = a.families.split(",")
     print(f"{len(syms)} symbols, {(t1 - t0) / DAY:.0f}d of data, train until holdout start "
-          f"({(hold_start - t0) / DAY:.0f}d train / {a.holdout_days}d holdout)", flush=True)
+          f"({(hold_start - first_end) / DAY:.0f}d train / {a.holdout_days}d holdout, "
+          f"{'oldest' if a.holdout_first else 'newest'})", flush=True)
 
     pops = {f: [G.random_genome(f, rng) for _ in range(a.pop)] for f in fams}
     t_start = time.time()
@@ -153,7 +162,7 @@ def main():
             order = sorted(range(a.pop), key=lambda i: -fit[i])
             top[f] = [pops[f][i] for i in order[:5]]
 
-        hold_ends = [int(hold_start + (t1 - hold_start) * (i + 1) / 6) for i in range(6)]
+        hold_ends = [int(h_lo + (h_hi - h_lo) * (i + 1) / 6) for i in range(6)]
         hold_bars = int(a.holdout_days / 6 * 96)
         hold_uni = syms[-4:] if len(syms) >= 8 else syms[:4]
         base = {f: [G.random_genome(f, rng) for _ in range(a.baseline)] for f in fams}
