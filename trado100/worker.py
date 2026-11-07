@@ -15,7 +15,7 @@ from loguru import logger
 
 from . import genome as G
 from .arena import Arena, DAY
-from .feed import Feed, BAR_MS
+from .feed import Feed, BAR_MS, CRYPTO_CORE
 from .manager import Manager
 from .store import SupabaseStore
 
@@ -105,10 +105,31 @@ class Worker:
             await asyncio.gather(*(one(s) for s in syms[i:i + 8]))
 
     # ---------------------------------------------------------------- cycle
+    def sanitize_universes(self, good):
+        """Swap non-crypto symbols out of live managers' universes (never while a position is open)."""
+        pool = sorted(good)
+        n = 0
+        for m in self.arena.managers.values():
+            if m.status == "dead":
+                continue
+            for i, s in enumerate(m.universe):
+                if s[:-4] in CRYPTO_CORE or s in m.positions or not pool:
+                    continue
+                for k in range(len(pool)):
+                    c = pool[(m.id + 7 * i + k) % len(pool)]
+                    if c not in m.universe:
+                        m.universe[i] = c
+                        n += 1
+                        break
+        if n:
+            logger.info(f"sanitized {n} non-crypto universe slots")
+        return n
+
     async def cycle(self):
         tick = await self.feed.universe(50)
         if tick:
             self.funding = tick
+            self.sanitize_universes(tick.keys())
         self.sh = await self.feed.sentiment_history(90)
         await self._refresh_funding()
         syms = sorted({s for m in self.arena.managers.values() if m.status != "dead" for s in m.universe})
