@@ -3,7 +3,7 @@
     python -m trado100.evolve --data data/hist --gens 30 --pop 24 --workers 8
 
 * Train period = everything except the last `--holdout-days` (default 180). Evolution NEVER sees the holdout.
-* Fitness (train) = mean over K random 28-day windows of (ret - 2*maxDD - 0.05 if <4 trades) minus 0.5*std.
+* Fitness (train) = mean over K random 28-day windows of (ret - 2*maxDD - 0.15 if no trades (-0.08 if <8)) minus 0.5*std.
   Windows and symbol set are re-drawn every generation so a genome cannot memorise one stretch.
 * Holdout = 6 consecutive 30-day windows. Evolved top-5 per family are compared with random genomes of
   the same family. The honest answer to "did evolution find anything?" is evolved vs random out-of-sample.
@@ -62,7 +62,9 @@ def run_window(family: str, genome: dict, universe: List[str], end_ts: int, bars
 
 
 def window_score(r: dict) -> float:
-    return r["ret"] - 2 * r["dd"] - (0.05 if r["trades"] < 4 else 0.0)
+    """Inactivity must never beat losing a little: no trades = -0.15, thin (<8) = -0.08."""
+    pen = 0.15 if r["trades"] == 0 else (0.08 if r["trades"] < 8 else 0.0)
+    return r["ret"] - 2 * r["dd"] - pen
 
 
 def job(a):
@@ -82,7 +84,7 @@ def summarize(res: List[dict]) -> dict:
 
 
 def passes(s: dict) -> bool:
-    return s["mean_ret"] > 0 and s["pos_windows"] * 2 >= s["n_windows"] and s["worst_dd"] < 0.12 and s["trades"] >= 20
+    return s["mean_ret"] > 0 and s["pos_windows"] * 2 >= s["n_windows"] and s["worst_dd"] < 0.12 and s["trades"] >= 40
 
 
 def main():
