@@ -236,3 +236,14 @@ def test_diversity_guard_keeps_three_seats_even_if_gate_rejects_everyone():
     finally:
         AR.GATE_MIN_RET = 0.0
     assert a.seats()["grid"] == 3
+
+
+def test_sanitize_universes_keeps_open_positions():
+    from trado100.worker import Worker
+    w = Worker.__new__(Worker)
+    m1 = mk("trend"); m1.id = 1; m1.universe = ["QQQUSDT", "BTCUSDT", "TSLAUSDT"]
+    m1.positions = {"TSLAUSDT": {"qty": 1}}
+    w.arena = type("A", (), {"managers": {1: m1}})()
+    n = w.sanitize_universes(["ETHUSDT", "SOLUSDT", "BTCUSDT"])
+    assert n == 1 and m1.universe[1] == "BTCUSDT" and m1.universe[2] == "TSLAUSDT"
+    assert m1.universe[0] in ("ETHUSDT", "SOLUSDT")
