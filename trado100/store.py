@@ -37,6 +37,9 @@ class InMemoryStore:
     def save_lesson(self, row: dict):
         self.lessons.append(row)
 
+    def load_active_lessons(self) -> List[dict]:
+        return [l for l in self.lessons if l.get("active")]
+
     def save_treasury(self, row: dict):
         self.treasury.append(row)
 
@@ -72,6 +75,10 @@ class SupabaseStore:
 
     def save_lesson(self, row: dict):
         self.sb.table("t100_lessons").insert(row).execute()
+
+    def load_active_lessons(self) -> List[dict]:
+        return (self.sb.table("t100_lessons").select("family,lesson").eq("active", True)
+                .is_("retired_at", "null").execute().data)
 
     def save_treasury(self, row: dict):
         self.sb.table("t100_treasury").insert(row).execute()

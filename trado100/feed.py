@@ -9,6 +9,12 @@ BASE = "https://api.bybit.com"
 BAR_MS = 900_000
 
 
+# Equity / commodity / FX perps follow market hours and gap; keep the arena crypto-only.
+NON_CRYPTO = {"XAU", "XAG", "XPT", "XPD", "TSLA", "NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "GOOG", "META",
+              "COIN", "MSTR", "HOOD", "CRCL", "PLTR", "AMD", "NFLX", "SPY", "QQQ", "EUR", "GBP", "JPY",
+              "OIL", "WTI", "BRENT", "NG", "COPPER"}
+
+
 class Feed:
     def __init__(self, client: Optional[httpx.AsyncClient] = None):
         self.c = client or httpx.AsyncClient(timeout=15, headers={"User-Agent": "trado-100"})
@@ -31,7 +37,8 @@ class Feed:
         res = await self._get("/v5/market/tickers", category="linear")
         if not res:
             return {}
-        rows = [t for t in res["list"] if t["symbol"].endswith("USDT") and "-" not in t["symbol"]]
+        rows = [t for t in res["list"] if t["symbol"].endswith("USDT") and "-" not in t["symbol"]
+                and t["symbol"][:-4] not in NON_CRYPTO]
         rows.sort(key=lambda t: float(t.get("turnover24h") or 0), reverse=True)
         return {t["symbol"]: float(t.get("fundingRate") or 0) for t in rows[:top]}
 
