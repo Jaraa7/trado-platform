@@ -3,7 +3,7 @@
     python -m trado100.evolve --data data/hist --gens 30 --pop 24 --workers 8
 
 * Train period = everything except the last `--holdout-days` (default 180). Evolution NEVER sees the holdout.
-* Fitness (train) = mean over K random 28-day windows of (ret - 2*maxDD - 0.05 if <4 trades) minus 0.5*std.
+* Fitness (train) = mean over K random 28-day windows of (ret - 2*maxDD - 0.15 if no trades (-0.08 if <8)) minus 0.5*std.
   Windows and symbol set are re-drawn every generation so a genome cannot memorise one stretch.
 * Holdout = 6 consecutive 30-day windows. Evolved top-5 per family are compared with random genomes of
   the same family. The honest answer to "did evolution find anything?" is evolved vs random out-of-sample.
@@ -62,7 +62,9 @@ def run_window(family: str, genome: dict, universe: List[str], end_ts: int, bars
 
 
 def window_score(r: dict) -> float:
-    return r["ret"] - 2 * r["dd"] - (0.05 if r["trades"] < 4 else 0.0)
+    """Inactivity must never beat losing a little: no trades = -0.15, thin (<8) = -0.08."""
+    pen = 0.15 if r["trades"] == 0 else (0.08 if r["trades"] < 8 else 0.0)
+    return r["ret"] - 2 * r["dd"] - pen
 
 
 def job(a):
@@ -82,7 +84,7 @@ def summarize(res: List[dict]) -> dict:
 
 
 def passes(s: dict) -> bool:
-    return s["mean_ret"] > 0 and s["pos_windows"] * 2 >= s["n_windows"] and s["worst_dd"] < 0.12 and s["trades"] >= 20
+    return s["mean_ret"] > 0 and s["pos_windows"] * 2 >= s["n_windows"] and s["worst_dd"] < 0.12 and s["trades"] >= 40
 
 
 def main():
@@ -95,6 +97,8 @@ def main():
     ap.add_argument("--windows", type=int, default=4)
     ap.add_argument("--window-days", type=int, default=28)
     ap.add_argument("--holdout-days", type=int, default=180)
+    ap.add_argument("--holdout-first", action="store_true",
+                    help="hide the OLDEST holdout-days instead of the newest (replication in a different regime)")
     ap.add_argument("--baseline", type=int, default=12)
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 2)
     ap.add_argument("--families", default=",".join(G.FAMILIES))
@@ -107,13 +111,20 @@ def main():
     assert len(syms) >= 4, f"need >=4 symbols in {a.data}"
     t0 = max(h[0][0] for h in _D["hist"].values())
     t1 = min(h[-1][0] for h in _D["hist"].values())
-    hold_start = t1 - a.holdout_days * DAY
-    first_end = t0 + (a.window_days + 10) * DAY
+    if a.holdout_first:                 # hold = [h_lo, h_hi] at the start of history, train = everything after
+        h_lo = t0 + 10 * DAY            # 10d warm-up for indicators
+        h_hi = h_lo + a.holdout_days * DAY
+        first_end, hold_start = h_hi + a.window_days * DAY, t1
+    else:                               # hold = the newest holdout-days
+        h_hi = t1
+        h_lo = t1 - a.holdout_days * DAY
+        first_end, hold_start = t0 + (a.window_days + 10) * DAY, h_lo
     assert hold_start > first_end, "not enough history for train + holdout"
     bars = a.window_days * 96
     fams = a.families.split(",")
     print(f"{len(syms)} symbols, {(t1 - t0) / DAY:.0f}d of data, train until holdout start "
-          f"({(hold_start - t0) / DAY:.0f}d train / {a.holdout_days}d holdout)", flush=True)
+          f"({(hold_start - first_end) / DAY:.0f}d train / {a.holdout_days}d holdout, "
+          f"{'oldest' if a.holdout_first else 'newest'})", flush=True)
 
     pops = {f: [G.random_genome(f, rng) for _ in range(a.pop)] for f in fams}
     t_start = time.time()
@@ -151,7 +162,7 @@ def main():
             order = sorted(range(a.pop), key=lambda i: -fit[i])
             top[f] = [pops[f][i] for i in order[:5]]
 
-        hold_ends = [int(hold_start + (t1 - hold_start) * (i + 1) / 6) for i in range(6)]
+        hold_ends = [int(h_lo + (h_hi - h_lo) * (i + 1) / 6) for i in range(6)]
         hold_bars = int(a.holdout_days / 6 * 96)
         hold_uni = syms[-4:] if len(syms) >= 8 else syms[:4]
         base = {f: [G.random_genome(f, rng) for _ in range(a.baseline)] for f in fams}
