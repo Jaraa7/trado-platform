@@ -247,3 +247,17 @@ def test_sanitize_universes_keeps_open_positions():
     n = w.sanitize_universes(["ETHUSDT", "SOLUSDT", "BTCUSDT"])
     assert n == 1 and m1.universe[1] == "BTCUSDT" and m1.universe[2] == "TSLAUSDT"
     assert m1.universe[0] in ("ETHUSDT", "SOLUSDT")
+
+
+def test_evolved_seeds_load_and_stay_in_bounds():
+    from trado100.arena import Arena, load_seeds
+    seeds = load_seeds()
+    assert set(seeds) == {"breakout", "regime_switch"} and len(seeds["breakout"]) >= 5
+    a = Arena(InMemoryStore(), {}, random.Random(3))
+    got = [a._seed_genome("breakout") for _ in range(40)]
+    hits = [g for g in got if g]
+    assert 15 <= len(hits) <= 40
+    for g in hits:
+        assert g == G.fix("breakout", g) and g["risk_pct"] <= 0.02 and g["leverage"] <= 3
+    assert a._seed_genome("trend") is None
+    assert load_seeds("/nonexistent.json") == {}
