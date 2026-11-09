@@ -261,3 +261,32 @@ def test_evolved_seeds_load_and_stay_in_bounds():
         assert g == G.fix("breakout", g) and g["risk_pct"] <= 0.02 and g["leverage"] <= 3
     assert a._seed_genome("trend") is None
     assert load_seeds("/nonexistent.json") == {}
+
+
+def test_genome_distance_and_diversity_gate():
+    rng = random.Random(5)
+    a = G.random_genome("regime_switch", rng)
+    assert G.distance("regime_switch", a, dict(a)) == 0.0
+    b = dict(a); b["er_thr"] = 0.25 if a["er_thr"] > 0.4 else 0.5
+    assert 0 < G.distance("regime_switch", a, b) < 1
+    arena = Arena(InMemoryStore(), {}, random.Random(1))
+    m = mk("regime_switch"); m.genome = a; m.status = "alive"
+    arena.managers[1] = m
+    assert arena._too_similar("regime_switch", dict(a)) is True          # clone rejected
+    assert arena._too_similar("regime_switch", G.random_genome("regime_switch", random.Random(99))) in (True, False)
+    far = {k: (spec_hi if abs(a[k] - spec_hi) > abs(a[k] - spec_lo) else spec_lo)
+           for k, (spec_lo, spec_hi, _) in G.spec("regime_switch").items() if k not in G.FORCED.get("regime_switch", {})}
+    far.update(G.FORCED.get("regime_switch", {}))
+    assert arena._too_similar("regime_switch", G.fix("regime_switch", far)) is False
+    assert arena._too_similar("grid", dict(a)) is False                    # other family unaffected
+    assert arena.diversity()["regime_switch"] == 0.0                       # single manager -> no pairs
+
+
+def test_diag_counters_count_evals_and_signals():
+    from trado100.synth import make_bars
+    bars = make_bars(400, 3)
+    m = mk("trend"); m.universe = ["A"]
+    for i in range(120, 400):
+        m.step("A", bars[:i + 1])
+    assert m.diag["evals"] > 0 and m.diag["signals"] >= m.diag["opened"] >= 0
+    assert m.diag["signals"] == m.diag["opened"] + m.diag["vetoed"]

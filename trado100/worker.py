@@ -199,7 +199,16 @@ class Worker:
             logger.warning(f"macro calendar unavailable: {e}")
             return False
 
+    def _log_diag(self, ts: int):
+        if (ts // BAR_MS) % 4 != 0:          # once per hour
+            return
+        d = self.arena.diag_summary()
+        logger.info("diag " + " ".join(f"{f[:5]}:{v['evals']}/{v['signals']}/{v['vetoed']}/{v['opened']}" for f, v in d.items())
+                    + " (evals/signals/vetoed/opened)")
+        logger.info("diversity " + " ".join(f"{f[:5]}={x}" for f, x in self.arena.diversity().items()))
+
     def _heartbeat(self, ts: int):
+        self._log_diag(ts)
         a = self.arena
         live = [m for m in a.managers.values() if m.status != "dead"]
         eq = sum(m.equity() for m in live)

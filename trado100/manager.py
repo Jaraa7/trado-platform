@@ -38,6 +38,7 @@ class Manager:
     stage_since: int = 0
     max_dd_stage: float = 0.0
     positions: Dict[str, dict] = field(default_factory=dict)
+    diag: Dict[str, int] = field(default_factory=lambda: {"evals": 0, "signals": 0, "vetoed": 0, "opened": 0})
     last_px: Dict[str, float] = field(default_factory=dict)
     n_trades: int = 0
     wins: int = 0
@@ -108,9 +109,11 @@ class Manager:
         tf = self.genome["tf"]
         if tf > 1 and (ts // BAR_MS) % tf != tf - 1:
             return
+        self.diag["evals"] += 1
         sig = families.signal(self.family, self.genome, resample(bars15, tf), ctx)
         if not sig:
             return
+        self.diag["signals"] += 1
         side = sig["side"]
         entry = close * (1 + SLIPPAGE if side == "long" else 1 - SLIPPAGE)
         dec = guardian.check(
@@ -119,7 +122,9 @@ class Manager:
             free_notional=self.equity() * self.genome["leverage"] - self._notional_open(),
             blackout=blackout, blind=blind, frozen=ts < self.frozen_until, kill_switch=kill)
         if not dec.ok:
+            self.diag["vetoed"] += 1
             return
+        self.diag["opened"] += 1
         fee_in = entry * dec.qty * TAKER_FEE
         self.positions[sym] = {"side": side, "entry": entry, "qty": dec.qty, "stop": sig["stop"],
                                "target": sig["target"], "opened_ts": ts, "fee_in": fee_in,
