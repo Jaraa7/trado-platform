@@ -18,6 +18,7 @@ from .arena import Arena, DAY
 from .feed import Feed, BAR_MS, CRYPTO_CORE
 from .manager import Manager
 from .store import SupabaseStore
+from .reviewer import Reviewer, snapshot_from_arena
 
 HIST_BARS = 3000          # ~31 days of 15m bars for the birth gate
 GATE_BARS = 2000
@@ -40,6 +41,8 @@ class Worker:
         self.n_deaths_notified = 0
         self.last_pm_week = None
         self.fail_cycles = 0
+        self.reviewer = Reviewer(self.store, notify=self._notify_sync) if (
+            os.getenv("ANTHROPIC_API_KEY") and os.getenv("T100_REVIEWER", "1") != "0") else None
 
     # ---------------------------------------------------------------- boot
     async def boot(self):
@@ -173,6 +176,29 @@ class Worker:
         self._heartbeat(self.last_ts)
         await self._weekly(datetime.now(timezone.utc))
         await self._notify_deaths()
+        await self._review()
+
+    def _notify_sync(self, txt: str):
+        tok, chat = os.getenv("TELEGRAM_BOT_TOKEN"), os.getenv("TELEGRAM_ADMIN_CHAT_ID")
+        if tok and chat:
+            try:
+                httpx.post(f"https://api.telegram.org/bot{tok}/sendMessage", json={"chat_id": chat, "text": txt}, timeout=10)
+            except httpx.HTTPError:
+                pass
+
+    async def _review(self):
+        """Daily 05:00-KW + after deaths. Never lets a reviewer failure touch trading."""
+        if not self.reviewer:
+            return
+        try:
+            now = datetime.now(timezone.utc)
+            trig = self.reviewer.due(now, len(self.arena.deaths_log))
+            if trig:
+                snap = snapshot_from_arena(self.arena, int(now.timestamp() * 1000))
+                await asyncio.to_thread(self.reviewer.run_once, snap, trig, now)
+        except Exception as e:  # noqa: BLE001
+            self.reviewer.last_run = datetime.now(timezone.utc)   # avoid retry storm
+            logger.warning(f"reviewer failed: {e}")
 
     async def _refresh_funding(self):
         """Funding settles every 8h: refresh the history only when a settlement could have happened."""

@@ -290,3 +290,32 @@ def test_diag_counters_count_evals_and_signals():
         m.step("A", bars[:i + 1])
     assert m.diag["evals"] > 0 and m.diag["signals"] >= m.diag["opened"] >= 0
     assert m.diag["signals"] == m.diag["opened"] + m.diag["vetoed"]
+
+
+# ---------------------------------------------------------------- reviewer
+def test_reviewer_runs_logs_cost_and_caps():
+    from datetime import datetime, timezone
+    from trado100.reviewer import Reviewer
+    st = InMemoryStore()
+    notes, issues = [], []
+    reply = ('{"summary":"ok","findings":[{"title":"A","evidence":"e","proposed_test":"t","severity":"high"},'
+             '{"title":"B","evidence":"e","proposed_test":"t","severity":"low"}]}')
+    r = Reviewer(st, llm=lambda s, u: (reply, "fake", 1000, 500, 0.4),
+                 issue_fn=lambda t, b: issues.append(t) or "http://x/1", notify=notes.append, cap=0.5)
+    now = datetime(2026, 11, 10, 3, tzinfo=timezone.utc)
+    assert r.due(now, 0) == "daily"
+    out = r.run_once({"deaths_total": 2}, "daily", now)
+    assert out["findings"][0]["title"] == "A" and len(issues) == 1        # only medium/high become issues
+    assert st.reviews[0]["issue_urls"] == ["http://x/1"] and st.llm_costs[0]["cost_usd"] == 0.4
+    assert r.due(now, 2) is None and r.due(now.replace(hour=10), 3) == "death"
+    r.run_once({}, "daily", now)                                          # 0.8 >= cap after this one
+    assert r.run_once({}, "daily", now) is None and len(notes) == 1       # halted + notified once
+    assert r.run_once({}, "daily", now) is None and len(notes) == 1
+
+
+def test_reviewer_bad_json_and_snapshot():
+    from trado100.reviewer import Reviewer, parse_review, snapshot_from_arena
+    st = InMemoryStore()
+    r = Reviewer(st, llm=lambda s, u: ("not json", "fake", 1, 1, 0.0), issue_fn=lambda t, b: None)
+    assert r.run_once({}, "manual")["findings"] == []
+    assert parse_review('x {"summary":"s","findings":[{"title":"t"}]} y')["findings"][0]["title"] == "t"
