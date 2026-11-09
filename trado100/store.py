@@ -63,13 +63,16 @@ class InMemoryStore:
 class SupabaseStore:
     """Uses the existing supabase client. Needs SUPABASE_URL + SUPABASE_SERVICE_KEY."""
 
-    def __init__(self):
+    def __init__(self, arena: str = "main"):
         from supabase import create_client
+        self.arena = arena
         url, key = os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"]
         self.sb = create_client(url, key)
 
     def create_manager(self, row: dict) -> int:
         r = {k: v for k, v in row.items() if k != "id"}
+        if self.arena != "main":
+            r["arena"] = self.arena
         return self.sb.table("t100_managers").insert(r).execute().data[0]["id"]
 
     def update_managers(self, rows: List[dict]):
@@ -91,10 +94,13 @@ class SupabaseStore:
                 .is_("retired_at", "null").execute().data)
 
     def save_treasury(self, row: dict):
+        if self.arena != "main":
+            row = dict(row, arena=self.arena)
         self.sb.table("t100_treasury").insert(row).execute()
 
     def last_treasury(self):
-        d = self.sb.table("t100_treasury").select("*").order("ts", desc=True).limit(1).execute().data
+        q = self.sb.table("t100_treasury").select("*").eq("arena", self.arena)
+        d = q.order("ts", desc=True).limit(1).execute().data
         return d[0] if d else None
 
     def save_review(self, row: dict):
@@ -114,7 +120,7 @@ class SupabaseStore:
         out, start = [], 0
         while True:
             page = (self.sb.table("t100_managers").select("*").neq("status", "dead")
-                    .range(start, start + 999).execute().data)
+                    .eq("arena", self.arena).range(start, start + 999).execute().data)
             out += page
             if len(page) < 1000:
                 return out

@@ -176,7 +176,7 @@ class FakeFeed:
         self.world, self.n = world, start
         self.c = None
 
-    async def universe(self, top=50):
+    async def universe(self, top=50, mode="turnover"):
         return {s: 0.0001 for s in self.world}
 
     async def klines(self, symbol, bars=1000, end_ms=None):
@@ -339,3 +339,13 @@ def test_judge_live_only_cached_capped():
     assert j(c, dict(ctx, sym="SOLUSDT")) is None and len(n) == 2     # cap 0.015 hit after 2nd
     j2 = Judge(st, llm=lambda s, u: 1 / 0, cap=999)
     assert j2(c, dict(ctx, sym="XRPUSDT")) is None                                    # failure -> None
+
+
+def test_volatile_rank_skips_majors_and_illiquid():
+    from trado100.feed import volatile_rank, VOL_SKIP_TOP, VOL_MIN_TURNOVER
+    rows = [{"symbol": f"M{i}USDT", "turnover24h": 1e9 - i, "highPrice24h": "101", "lowPrice24h": "100", "lastPrice": "100"}
+            for i in range(VOL_SKIP_TOP)]
+    rows += [{"symbol": "CALMUSDT", "turnover24h": 9e6, "highPrice24h": "101", "lowPrice24h": "100", "lastPrice": "100"},
+             {"symbol": "WILDUSDT", "turnover24h": 8e6, "highPrice24h": "130", "lowPrice24h": "100", "lastPrice": "110"},
+             {"symbol": "THINUSDT", "turnover24h": VOL_MIN_TURNOVER - 1, "highPrice24h": "300", "lowPrice24h": "100", "lastPrice": "150"}]
+    assert [r["symbol"] for r in volatile_rank(rows)] == ["WILDUSDT", "CALMUSDT"]

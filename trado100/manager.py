@@ -8,7 +8,7 @@ from . import families, guardian
 from .indicators import resample
 
 BAR_MS = 15 * 60 * 1000
-SLIPPAGE = 0.001      # 0.1%
+SLIPPAGE = float(__import__('os').environ.get('T100_SLIPPAGE', '0.001'))   # 0.1% (volatile arena: 0.3%)
 TAKER_FEE = 0.00055   # Bybit linear taker
 MAX_OPEN = 3
 
