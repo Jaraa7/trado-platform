@@ -12,6 +12,7 @@ def _iso(ms: int | None):
 class InMemoryStore:
     def __init__(self):
         self.managers, self.trades, self.deaths, self.lessons, self.treasury = {}, [], [], [], []
+        self.reviews, self.llm_costs = [], []
         self._n = 0
 
     NOT_NULL = ("family", "variant", "generation", "status", "stage", "genome", "universe", "balance")
@@ -48,6 +49,15 @@ class InMemoryStore:
 
     def last_treasury(self):
         return self.treasury[-1] if self.treasury else None
+
+    def save_review(self, row: dict):
+        self.reviews.append(row)
+
+    def add_llm_cost(self, row: dict):
+        self.llm_costs.append(dict(row, ts=datetime.now(timezone.utc).isoformat()))
+
+    def month_llm_cost(self, ym: str) -> float:
+        return sum(float(r["cost_usd"]) for r in self.llm_costs if r["ts"].startswith(ym))
 
 
 class SupabaseStore:
@@ -86,6 +96,19 @@ class SupabaseStore:
     def last_treasury(self):
         d = self.sb.table("t100_treasury").select("*").order("ts", desc=True).limit(1).execute().data
         return d[0] if d else None
+
+    def save_review(self, row: dict):
+        self.sb.table("t100_reviews").insert(row).execute()
+
+    def add_llm_cost(self, row: dict):
+        self.sb.table("t100_llm_costs").insert(row).execute()
+
+    def month_llm_cost(self, ym: str) -> float:
+        y, m = map(int, ym.split("-"))
+        nxt = f"{y + (m == 12)}-{(m % 12) + 1:02d}-01"
+        rows = (self.sb.table("t100_llm_costs").select("cost_usd").gte("ts", f"{ym}-01")
+                .lt("ts", nxt).execute().data)
+        return sum(float(r["cost_usd"]) for r in rows)
 
     def load_alive(self) -> List[dict]:
         out, start = [], 0
