@@ -18,6 +18,7 @@ from .arena import Arena, DAY
 from .feed import Feed, BAR_MS, CRYPTO_CORE
 from .manager import Manager
 from .store import SupabaseStore
+from .judge import Judge
 from .reviewer import Reviewer, snapshot_from_arena
 
 HIST_BARS = 3000          # ~31 days of 15m bars for the birth gate
@@ -41,6 +42,8 @@ class Worker:
         self.n_deaths_notified = 0
         self.last_pm_week = None
         self.fail_cycles = 0
+        self._live_ts = -1
+        self.judge = Judge(self.store) if (os.getenv("GEMINI_API_KEY") and os.getenv("T100_JUDGE", "1") != "0") else None
         self.reviewer = Reviewer(self.store, notify=self._notify_sync) if (
             os.getenv("ANTHROPIC_API_KEY") and os.getenv("T100_REVIEWER", "1") != "0") else None
 
@@ -79,7 +82,9 @@ class Worker:
 
     def ctx_fn(self, sym: str, ts: int) -> dict:
         """Point-in-time funding + sentiment (no look-ahead): last value published at or before ts."""
-        out = {}
+        out = {"sym": sym, "ts": ts}
+        if self.judge and ts == self._live_ts:          # LLM only on the newest bar, never in backtests
+            out["llm"], out["live"] = self.judge, True
         f = self.fh.get(sym)
         if f is not None and len(f):
             i = int(np.searchsorted(f[:, 0], ts, side="right")) - 1
@@ -159,6 +164,7 @@ class Worker:
 
         black = await self._blackout()
         tss = sorted({int(t) for s in syms if s in self.full for t in self.full[s][-300:, 0] if t > self.last_ts})
+        self._live_ts = tss[-1] if tss else -1
         for ts in tss:
             self.arena.blackout = black and ts >= tss[-1] - 2 * BAR_MS
             for s in syms:

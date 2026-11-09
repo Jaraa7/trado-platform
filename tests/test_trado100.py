@@ -319,3 +319,23 @@ def test_reviewer_bad_json_and_snapshot():
     r = Reviewer(st, llm=lambda s, u: ("not json", "fake", 1, 1, 0.0), issue_fn=lambda t, b: None)
     assert r.run_once({}, "manual")["findings"] == []
     assert parse_review('x {"summary":"s","findings":[{"title":"t"}]} y')["findings"][0]["title"] == "t"
+
+
+def test_judge_live_only_cached_capped():
+    from trado100.judge import Judge, HOUR_MS
+    st = InMemoryStore()
+    n = []
+    def fake(s, u):
+        n.append(1); return '{"side":"long"}', "fake", 10, 5, 0.01
+    j = Judge(st, llm=fake, cap=0.015)
+    c = [100 + i * 0.1 for i in range(60)]
+    import time
+    ts = int(time.time() // 3600) * HOUR_MS
+    assert j(c, {"sym": "BTCUSDT", "ts": ts}) is None and not n                      # not live
+    assert j(c, {"sym": "BTCUSDT", "ts": ts + 900_000, "live": True}) is None and not n  # not hourly
+    ctx = {"sym": "BTCUSDT", "ts": ts, "live": True}
+    assert j(c, ctx) == "long" and j(c, ctx) == "long" and len(n) == 1                # cached
+    assert j(c, dict(ctx, sym="ETHUSDT")) == "long" and len(n) == 2
+    assert j(c, dict(ctx, sym="SOLUSDT")) is None and len(n) == 2     # cap 0.015 hit after 2nd
+    j2 = Judge(st, llm=lambda s, u: 1 / 0, cap=999)
+    assert j2(c, dict(ctx, sym="XRPUSDT")) is None                                    # failure -> None
