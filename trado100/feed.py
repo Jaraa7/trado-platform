@@ -17,6 +17,21 @@ STX IMX GRT LDO CRV SAND MANA AXS GALA THETA EOS XTZ FTM S POL PENDLE TAO KAS WI
 TRUMP VIRTUAL AI16Z FARTCOIN PNUT HYPE XMR DYDX SNX COMP 1INCH ENS BLUR EIGEN ETHFI""".split())
 
 
+VOL_MIN_TURNOVER = 5_000_000      # USD/24h floor: volatile but still tradable
+VOL_SKIP_TOP = 15                 # the majors belong to the main arena
+
+
+def volatile_rank(rows: list) -> list:
+    """rows sorted by turnover desc. Drop the majors and illiquid names, rank the rest by 24h range."""
+    def rng(t):
+        try:
+            return (float(t["highPrice24h"]) - float(t["lowPrice24h"])) / float(t["lastPrice"])
+        except (KeyError, ValueError, ZeroDivisionError):
+            return 0.0
+    rest = [t for t in rows[VOL_SKIP_TOP:] if float(t.get("turnover24h") or 0) >= VOL_MIN_TURNOVER]
+    return sorted(rest, key=rng, reverse=True)
+
+
 class Feed:
     def __init__(self, client: Optional[httpx.AsyncClient] = None):
         self.c = client or httpx.AsyncClient(timeout=15, headers={"User-Agent": "trado-100"})
@@ -34,7 +49,7 @@ class Feed:
             time.sleep(0.5 * (attempt + 1))
         return None
 
-    async def universe(self, top: int = 50) -> Dict[str, float]:
+    async def universe(self, top: int = 50, mode: str = "turnover") -> Dict[str, float]:
         """Top USDT linear perps by 24h turnover -> {symbol: funding_rate}."""
         res = await self._get("/v5/market/tickers", category="linear")
         if not res:
@@ -42,6 +57,8 @@ class Feed:
         rows = [t for t in res["list"] if t["symbol"].endswith("USDT") and "-" not in t["symbol"]
                 and t["symbol"][:-4] in CRYPTO_CORE]
         rows.sort(key=lambda t: float(t.get("turnover24h") or 0), reverse=True)
+        if mode == "volatile":
+            rows = volatile_rank(rows)
         return {t["symbol"]: float(t.get("fundingRate") or 0) for t in rows[:top]}
 
     async def klines(self, symbol: str, bars: int = 1000, end_ms: Optional[int] = None) -> np.ndarray:

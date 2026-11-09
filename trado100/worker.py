@@ -27,8 +27,10 @@ KEEP = 4000
 
 
 class Worker:
-    def __init__(self, store=None, feed=None, size_per_family: int = 10):
-        self.store = store or SupabaseStore()
+    def __init__(self, store=None, feed=None, size_per_family: int = 10, arena: str = "main"):
+        self.arena_name = arena
+        self.mode = "volatile" if arena == "volatile" else "turnover"
+        self.store = store or SupabaseStore(arena)
         self.feed = feed or Feed()
         self.full: dict[str, np.ndarray] = {}
         self.last_ts = 0
@@ -45,11 +47,11 @@ class Worker:
         self._live_ts = -1
         self.judge = Judge(self.store) if (os.getenv("GEMINI_API_KEY") and os.getenv("T100_JUDGE", "1") != "0") else None
         self.reviewer = Reviewer(self.store, notify=self._notify_sync) if (
-            os.getenv("ANTHROPIC_API_KEY") and os.getenv("T100_REVIEWER", "1") != "0") else None
+            os.getenv("ANTHROPIC_API_KEY") and os.getenv("T100_REVIEWER", "1") != "0" and arena == "main") else None
 
     # ---------------------------------------------------------------- boot
     async def boot(self):
-        self.funding = await self.feed.universe(50)
+        self.funding = await self.feed.universe(50, self.mode)
         if not self.funding:
             raise RuntimeError("cannot reach Bybit — will retry")
         rows = self.store.load_alive()
@@ -134,7 +136,7 @@ class Worker:
         return n
 
     async def cycle(self):
-        tick = await self.feed.universe(50)
+        tick = await self.feed.universe(50, self.mode)
         if tick:
             self.funding = tick
             self.sanitize_universes(tick.keys())
@@ -290,4 +292,6 @@ class Worker:
 
 
 if __name__ == "__main__":
-    asyncio.run(Worker().run())
+    import sys
+    ar = sys.argv[sys.argv.index("--arena") + 1] if "--arena" in sys.argv else "main"
+    asyncio.run(Worker(arena=ar).run())
