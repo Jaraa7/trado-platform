@@ -83,3 +83,16 @@ def mutate(family: str, genome: dict, rng: random.Random) -> dict:
 
 def crossover(family: str, a: dict, b: dict, rng: random.Random) -> dict:
     return fix(family, {k: (a[k] if rng.random() < 0.5 else b[k]) for k in spec(family)})
+
+
+def distance(family: str, a: dict, b: dict) -> float:
+    """Mean normalised gene difference in [0,1] over the family's free genes (0 = identical)."""
+    sp = spec(family)
+    free = [k for k in sp if k not in FORCED.get(family, {})]
+    if not free:
+        return 1.0
+    tot = 0.0
+    for k in free:
+        lo, hi, _ = sp[k]
+        tot += abs(float(a[k]) - float(b[k])) / ((hi - lo) or 1.0)
+    return tot / len(free)

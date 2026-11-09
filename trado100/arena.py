@@ -14,6 +14,7 @@ GATE_MIN_RET = 0.0
 GATE_MAX_DD = 0.12
 SYMS_PER_MANAGER = 5
 CORR_MIN_MANAGERS = 5      # spec said 3; with 10 near-clone variants per family 3 is routine (sim: ~6 deaths/day)
+MIN_GENOME_DIST = 0.04      # a new birth must differ from every live sibling by >=4% of gene range (mean)
 CORR_COOLDOWN = 7 * DAY    # at most one correlation death per family per week
 
 
@@ -104,6 +105,12 @@ class Arena:
                 if not self._spawn(fam, v, None, ts, max_tries):
                     self.vacancies.append({"family": fam, "variant": v, "tries": 0})
 
+    def _too_similar(self, family: str, g: dict) -> bool:
+        """Diversity gate: reject a genome nearly identical to a live sibling (avoids clone families
+        that die together through the correlation rule)."""
+        return any(G.distance(family, g, m.genome) < MIN_GENOME_DIST
+                   for m in self.managers.values() if m.family == family and m.status != "dead")
+
     def _seed_genome(self, family: str) -> Optional[dict]:
         """70% of the 'fresh' slot starts from a mutated walk-forward survivor (new births only)."""
         pool = self.seeds.get(family)
@@ -117,8 +124,11 @@ class Arena:
         best, best_ret = None, -9.0
         survivors = sorted((m for m in self.managers.values() if m.family == family and m.status != "dead"),
                            key=lambda m: m.equity(), reverse=True)
-        for _ in range(max_tries):
-            r = self.rng.random()
+        tries = attempts = 0
+        diversify = False            # after a clone rejection, draw a fresh/seeded genome instead of another mutation
+        while tries < max_tries and attempts < 4 * max_tries:
+            attempts += 1
+            r = 0.95 if diversify else self.rng.random()
             if parent is not None and r < 0.6:
                 g = G.mutate(family, parent.genome, self.rng)
             elif len(survivors) >= 2 and r < 0.8:
@@ -128,6 +138,11 @@ class Arena:
             else:
                 g = self._seed_genome(family) or G.random_genome(family, self.rng)
             g = self._apply_bias(family, g)
+            if not force and self._too_similar(family, g):
+                diversify = True     # rejected clones are free: they don't use up the backtest budget
+                continue
+            diversify = False
+            tries += 1
             proto = self._new_proto(family, variant, g, parent, ts)
             res = backtest_gate(proto, self.history, self.gate_bars, self.ctx_fn)
             if res["ok"]:
@@ -269,6 +284,24 @@ class Arena:
                 if "drawdown" in text or "daily_loss" in text:
                     bias["risk_mult"] = 0.8
                 self.family_bias[fam].append(bias)
+
+    def diversity(self) -> dict:
+        """Per family: mean pairwise gene distance among live managers (0 = clones, ~0.3 = well spread)."""
+        out = {}
+        for f in G.FAMILIES:
+            gs = [m.genome for m in self.managers.values() if m.family == f and m.status != "dead"]
+            ds = [G.distance(f, gs[i], gs[j]) for i in range(len(gs)) for j in range(i + 1, len(gs))]
+            out[f] = round(sum(ds) / len(ds), 3) if ds else 0.0
+        return out
+
+    def diag_summary(self) -> dict:
+        """Per family: evaluations, raw signals, guardian vetoes, opened trades since boot."""
+        out = {f: {"evals": 0, "signals": 0, "vetoed": 0, "opened": 0} for f in G.FAMILIES}
+        for m in self.managers.values():
+            if m.status != "dead":
+                for k, v in m.diag.items():
+                    out[m.family][k] += v
+        return out
 
     def seats(self) -> Dict[str, int]:
         out = {f: 0 for f in G.FAMILIES}
