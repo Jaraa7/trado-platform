@@ -115,8 +115,8 @@ class Manager:
             return
         self.diag["signals"] += 1
         side = sig["side"]
-        if regime.blocks(int((ctx or {}).get("regime") or 0), side):   # optional direction gate (off unless supplied)
-            self.diag["vetoed"] += 1
+        if regime.blocks(int((ctx or {}).get("regime") or 0), side) or (ctx or {}).get("skip"):
+            self.diag["vetoed"] += 1      # optional gates; both are off unless the caller supplies the ctx key
             return
         entry = close * (1 + SLIPPAGE if side == "long" else 1 - SLIPPAGE)
         dec = guardian.check(
