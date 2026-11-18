@@ -1,0 +1,28 @@
+# Keep the Fly image small and never ship local data or secrets.
+.git
+.github
+.claude
+.agents
+.mcp.json
+skills-lock.json
+.pytest_cache
+**/__pycache__
+**/*.pyc
+.DS_Store
+.vscode
+.idea
+
+# Local data (history downloads, evolution output, experiments) — runtime never reads it
+data/
+
+# Secrets: Fly injects env via `flyctl secrets`, a local .env must never be baked into the image
+.env
+.env.*
+!.env.example
+secrets/
+*.key
+*.pem
+
+# Not needed at runtime
+tests/
+*.log
