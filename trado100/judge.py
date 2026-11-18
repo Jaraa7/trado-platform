@@ -13,6 +13,7 @@ import numpy as np
 from loguru import logger
 
 HOUR_MS = 3_600_000
+BAR_MS = 900_000
 MAX_CALLS_PER_HOUR = int(os.getenv("T100_JUDGE_CALLS_PER_HOUR", "40"))
 CAP_USD = float(os.getenv("T100_LLM_CAP_USD", "150"))
 SYSTEM = ("You are a cautious crypto perp trader's signal filter. Given recent hourly-ish closes (as % returns), "
@@ -35,7 +36,9 @@ class Judge:
 
     def __call__(self, closes, ctx) -> Optional[str]:
         sym, ts = ctx.get("sym"), ctx.get("ts")
-        if not ctx.get("live") or sym is None or ts is None or ts % HOUR_MS:
+        # ts is the OPEN time of the newest 15m bar; managers on >=1h evaluate on the bar that
+        # CLOSES the hour (opens at :45), so test the close time, not the open time.
+        if not ctx.get("live") or sym is None or ts is None or (ts + BAR_MS) % HOUR_MS:
             return None
         key = (sym, ts)
         if key in self.cache:
