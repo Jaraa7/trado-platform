@@ -322,7 +322,7 @@ def test_reviewer_bad_json_and_snapshot():
 
 
 def test_judge_live_only_cached_capped():
-    from trado100.judge import Judge, HOUR_MS
+    from trado100.judge import Judge, HOUR_MS, BAR_MS
     st = InMemoryStore()
     n = []
     def fake(s, u):
@@ -330,15 +330,36 @@ def test_judge_live_only_cached_capped():
     j = Judge(st, llm=fake, cap=0.015)
     c = [100 + i * 0.1 for i in range(60)]
     import time
-    ts = int(time.time() // 3600) * HOUR_MS
+    ts = int(time.time() // 3600) * HOUR_MS - BAR_MS        # the :45 bar = the one that closes the hour
     assert j(c, {"sym": "BTCUSDT", "ts": ts}) is None and not n                      # not live
-    assert j(c, {"sym": "BTCUSDT", "ts": ts + 900_000, "live": True}) is None and not n  # not hourly
+    assert j(c, {"sym": "BTCUSDT", "ts": ts + BAR_MS, "live": True}) is None and not n   # :00 bar closes mid-hour
     ctx = {"sym": "BTCUSDT", "ts": ts, "live": True}
     assert j(c, ctx) == "long" and j(c, ctx) == "long" and len(n) == 1                # cached
     assert j(c, dict(ctx, sym="ETHUSDT")) == "long" and len(n) == 2
-    assert j(c, dict(ctx, sym="SOLUSDT")) is None and len(n) == 2     # cap 0.015 hit after 2nd
+    assert j(c, dict(ctx, sym="SOLUSDT")) is None and len(n) == 2                     # cap 0.015 hit after 2nd
     j2 = Judge(st, llm=lambda s, u: 1 / 0, cap=999)
     assert j2(c, dict(ctx, sym="XRPUSDT")) is None                                    # failure -> None
+
+
+def test_judge_fires_through_manager_step():
+    """Regression: the judge must actually be reached on the bar a tf=4 manager evaluates."""
+    import numpy as np
+    from trado100.judge import Judge, BAR_MS
+    from trado100.manager import Manager
+    from trado100 import genome as G
+    import random
+    calls = []
+    j = Judge(InMemoryStore(), llm=lambda s, u: (calls.append(1) or '{"side":"none"}', "fake", 1, 1, 0.0))
+    g = G.random_genome("llm_judge", random.Random(3)); g["tf"] = 4
+    m = Manager(id=1, family="llm_judge", variant=0, genome=g, universe=["BTCUSDT"])
+    n = 1200
+    t0 = 1_794_000_000_000 // (4 * BAR_MS) * (4 * BAR_MS)
+    px = 100 + np.cumsum(np.random.default_rng(1).normal(0, 0.2, n))
+    bars = np.column_stack([t0 + np.arange(n) * BAR_MS, px, px + 0.3, px - 0.3, px, np.full(n, 1000.0)])
+    for i in range(n - 8, n):
+        ts = int(bars[i, 0])
+        m.step("BTCUSDT", bars[:i + 1], {"sym": "BTCUSDT", "ts": ts, "llm": j, "live": True})
+    assert len(calls) == 2, calls            # 8 bars = 2 closed hours
 
 
 def test_volatile_rank_skips_majors_and_illiquid():
@@ -349,3 +370,17 @@ def test_volatile_rank_skips_majors_and_illiquid():
              {"symbol": "WILDUSDT", "turnover24h": 8e6, "highPrice24h": "130", "lowPrice24h": "100", "lastPrice": "110"},
              {"symbol": "THINUSDT", "turnover24h": VOL_MIN_TURNOVER - 1, "highPrice24h": "300", "lowPrice24h": "100", "lastPrice": "150"}]
     assert [r["symbol"] for r in volatile_rank(rows)] == ["WILDUSDT", "CALMUSDT"]
+
+
+def test_regime_gate_is_causal_and_off_by_default():
+    import numpy as np
+    from trado100.regime import regime_series, regime_at, blocks, SLOW
+    n = 2000
+    ts = 1_794_000_000_000 + np.arange(n) * 900_000
+    up = np.column_stack([ts, *[100 * 1.0005 ** np.arange(n)] * 4, np.ones(n)])
+    r = regime_series(up)
+    assert r[SLOW - 1, 1] == 0 and r[-1, 1] == 1                       # warm-up neutral, then up
+    assert (regime_series(up[:1500])[:, 1] == r[:1500, 1]).all()       # causal: future bars change nothing
+    assert regime_at(r, int(ts[-1]) + 1) == 1 and regime_at(r, int(ts[0]) - 1) == 0
+    assert blocks(-1, "long") and blocks(1, "short") and not blocks(0, "long") and not blocks(-1, "short")
+    assert not blocks(int(({}).get("regime") or 0), "long")           # no ctx key -> gate off

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 import numpy as np
 
-from . import families, guardian
+from . import families, guardian, regime
 from .indicators import resample
 
 BAR_MS = 15 * 60 * 1000
@@ -115,6 +115,9 @@ class Manager:
             return
         self.diag["signals"] += 1
         side = sig["side"]
+        if regime.blocks(int((ctx or {}).get("regime") or 0), side):   # optional direction gate (off unless supplied)
+            self.diag["vetoed"] += 1
+            return
         entry = close * (1 + SLIPPAGE if side == "long" else 1 - SLIPPAGE)
         dec = guardian.check(
             equity=self.equity(), side=side, entry=entry, stop=sig["stop"], target=sig["target"],
