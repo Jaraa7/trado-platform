@@ -23,6 +23,7 @@ from .reviewer import Reviewer, snapshot_from_arena
 
 HIST_BARS = 3000          # ~31 days of 15m bars for the birth gate
 GATE_BARS = 2000
+STALE_MIN = 45             # other arena's heartbeat older than this -> alert
 KEEP = 4000
 
 
@@ -45,6 +46,9 @@ class Worker:
         self.last_pm_week = None
         self.fail_cycles = 0
         self._live_ts = -1
+        self.notify = self._notify_sync          # replaceable in tests
+        self._alerted: dict = {}                 # alert key -> last sent (epoch s)
+        self.cycle_fails = 0
         self.judge = Judge(self.store) if (os.getenv("GEMINI_API_KEY") and os.getenv("T100_JUDGE", "1") != "0") else None
         self.reviewer = Reviewer(self.store, notify=self._notify_sync) if (
             os.getenv("ANTHROPIC_API_KEY") and os.getenv("T100_REVIEWER", "1") != "0" and arena == "main") else None
@@ -273,22 +277,62 @@ class Worker:
             pass
 
     # ---------------------------------------------------------------- loop
+    # ---------------------------------------------------------------- watchdog
+    def _alert(self, key: str, txt: str, every_s: int = 3600):
+        """Telegram alert, at most once per `every_s` per key. Never raises."""
+        now = time.time()
+        if now - self._alerted.get(key, 0) < every_s:
+            return
+        self._alerted[key] = now
+        try:
+            self.notify(f"⛔ TRADO-100 [{self.arena_name}] {txt}")
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"alert failed: {e}")
+
+    def _watch_other_arena(self, now: datetime):
+        """Each arena watches the other one's heartbeat, so one silent worker is noticed by the living one."""
+        other = "volatile" if self.arena_name == "main" else "main"
+        try:
+            ts = self.store.last_beat(other)
+            if not ts:
+                return
+            age = (now - datetime.fromisoformat(str(ts).replace("Z", "+00:00"))).total_seconds() / 60
+            if age > STALE_MIN:
+                self._alert(f"stale:{other}", f"ساحة {other} واقفة: آخر نبضة قبل {age:.0f} دقيقة", 2 * 3600)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"watchdog check failed: {e}")
+
+    # ---------------------------------------------------------------- loop
     async def run(self):
+        fails = 0
         while True:
             try:
                 await self.boot()
                 break
             except Exception as e:
+                fails += 1
                 logger.error(f"boot failed: {e}; retry in 60s")
+                if fails >= 3:                        # ~3 minutes down -> tell the owner, then hourly
+                    self._alert("boot", f"الـ worker ما قدر يشتغل ({fails} محاولات): {str(e)[:200]}")
                 await asyncio.sleep(60)
         while True:
             now = time.time() * 1000
             wait = (BAR_MS - now % BAR_MS) / 1000 + 20
             await asyncio.sleep(wait)
-            try:
-                await self.cycle()
-            except Exception as e:                      # never die: guardian restarts only if silent
-                logger.exception(f"cycle failed: {e}")
+            await self.safe_cycle()
+
+    async def safe_cycle(self):
+        try:
+            await self.cycle()
+            self.cycle_fails = 0
+        except Exception as e:                      # never die: guardian restarts only if silent
+            self.cycle_fails += 1
+            logger.exception(f"cycle failed: {e}")
+            if self.cycle_fails >= 2:
+                self._alert("cycle", f"الدورة تفشل ({self.cycle_fails} مرات متتالية): {str(e)[:200]}")
+        if self.fail_cycles >= 3:
+            self._alert("blind", f"ما توصل أسعار من Bybit ({self.fail_cycles} دورات)")
+        self._watch_other_arena(datetime.now(timezone.utc))
 
 
 if __name__ == "__main__":

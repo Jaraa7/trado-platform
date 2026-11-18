@@ -384,3 +384,29 @@ def test_regime_gate_is_causal_and_off_by_default():
     assert regime_at(r, int(ts[-1]) + 1) == 1 and regime_at(r, int(ts[0]) - 1) == 0
     assert blocks(-1, "long") and blocks(1, "short") and not blocks(0, "long") and not blocks(-1, "short")
     assert not blocks(int(({}).get("regime") or 0), "long")           # no ctx key -> gate off
+
+
+def test_watchdog_alerts_on_failures_and_stale_arena():
+    import asyncio
+    from datetime import datetime, timezone, timedelta
+    st = InMemoryStore()
+    w = Worker(store=st, feed=object())
+    sent = []
+    w.notify = sent.append
+    async def boom():
+        raise RuntimeError("db down")
+    w.cycle = boom
+    asyncio.run(w.safe_cycle())
+    assert not sent                                            # one failure: no noise
+    asyncio.run(w.safe_cycle()); asyncio.run(w.safe_cycle())
+    assert len(sent) == 1 and "db down" in sent[0]             # alert once, then rate-limited
+    old = (datetime.now(timezone.utc) - timedelta(minutes=120)).isoformat()
+    st.treasury.append({"arena": "volatile", "ts": old})
+    w._watch_other_arena(datetime.now(timezone.utc))
+    w._watch_other_arena(datetime.now(timezone.utc))
+    assert len(sent) == 2 and "volatile" in sent[1]
+    st.treasury.append({"arena": "volatile", "ts": datetime.now(timezone.utc).isoformat()})
+    w._alerted.clear(); w._watch_other_arena(datetime.now(timezone.utc))
+    assert len(sent) == 2                                      # fresh heartbeat: silent
+    w.notify = lambda t: 1 / 0
+    w._alerted.clear(); w._alert("x", "y")                     # a broken notifier never raises

@@ -50,6 +50,11 @@ class InMemoryStore:
     def last_treasury(self):
         return self.treasury[-1] if self.treasury else None
 
+    def last_beat(self, arena: str):
+        """ISO timestamp of the newest heartbeat of `arena`, or None."""
+        rows = [r for r in self.treasury if r.get("arena", "main") == arena and r.get("ts")]
+        return rows[-1]["ts"] if rows else None
+
     def save_review(self, row: dict):
         self.reviews.append(row)
 
@@ -102,6 +107,11 @@ class SupabaseStore:
         q = self.sb.table("t100_treasury").select("*").eq("arena", self.arena)
         d = q.order("ts", desc=True).limit(1).execute().data
         return d[0] if d else None
+
+    def last_beat(self, arena: str):
+        d = (self.sb.table("t100_treasury").select("ts").eq("arena", arena)
+             .order("ts", desc=True).limit(1).execute().data)
+        return d[0]["ts"] if d else None
 
     def save_review(self, row: dict):
         self.sb.table("t100_reviews").insert(row).execute()
