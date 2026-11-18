@@ -25,7 +25,7 @@ def _init(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data/hist"); ap.add_argument("--genomes", type=int, default=10)
-    ap.add_argument("--workers", type=int, default=os.cpu_count() or 2); ap.add_argument("--seed", type=int, default=11)
+    ap.add_argument("--workers", type=int, default=os.cpu_count() or 2); ap.add_argument("--seed", type=int, default=11); ap.add_argument("--only", default="")
     a = ap.parse_args()
     _init(a.data)
     rng = random.Random(a.seed)
@@ -35,7 +35,7 @@ def main():
     ends = [int(t1 - k * 30 * DAY) for k in range(int((t1 - t0) // (30 * DAY)) - 1)]
     ends = [e for e in ends if e - 30 * DAY > t0]
     mid = sorted(ends)[len(ends) // 2]
-    fams = list(C.GENES) + BASE
+    fams = a.only.split(",") if a.only else list(C.GENES) + BASE
     jobs = []
     for f in fams:
         for _ in range(a.genomes):

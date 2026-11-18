@@ -19,7 +19,7 @@ from . import families as F, genome as G
 from .indicators import ema_last, sma_last, std_last, rsi_last, atr_last
 
 GENES = {
-    "ewo_dip":    {"base_n": (14, 50, True), "off": (0.01, 0.045, False), "ewo": (1.0, 5.0, False), "rsi_buy": (35, 60, False)},
+    "ewo_dip":    {"base_n": (14, 50, True), "off": (0.01, 0.045, False), "ewo": (0.5, 4.0, False), "rsi_buy": (35, 60, False)},
     "supertrend": {"st_n": (7, 21, True), "st_mult": (1.5, 4.5, False)},
     "cluc":       {"bb_n": (20, 40, True), "below": (0.003, 0.02, False), "vol_q": (0.6, 1.5, False)},
 }
@@ -28,7 +28,7 @@ GENES = {
 def ewo_dip(g, b, ctx):
     c = b[:, 4]
     base = ema_last(c, g["base_n"])
-    ewo = (ema_last(c, 5) - ema_last(c, 35)) / c[-1] * 100
+    ewo = (ema_last(c, 50) - ema_last(c, 200)) / c[-1] * 100      # as in SMAOffset: EMA50 vs EMA200
     r = rsi_last(c)
     atr = atr_last(b[:, 2], b[:, 3], c)
     if c[-1] < base * (1 - g["off"]) and ewo > g["ewo"] and r < g["rsi_buy"]:
