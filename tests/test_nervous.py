@@ -185,8 +185,8 @@ class TestLifecycleAndRouter:
             return "ok", 100, 50
         r = LLMRouter(caller=caller, metrics_sink=lambda row: None)
         res = r.complete("standard", "sys", [{"role": "user", "content": "x"}], agent_id="t")
-        assert calls == ["deepseek:deepseek-chat", "google:gemini-3.1-pro"]
-        assert res.fallback_used and res.model == "google:gemini-3.1-pro"
+        assert calls == ["deepseek:deepseek-chat", "google:gemini-3.1-pro-preview"]
+        assert res.fallback_used and res.model == "google:gemini-3.1-pro-preview"
         assert res.cost_usd == pytest.approx(100 / 1e6 * 2.0 + 50 / 1e6 * 12.0)
 
     def test_router_downgrade_on_budget(self):

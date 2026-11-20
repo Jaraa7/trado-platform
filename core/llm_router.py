@@ -96,7 +96,10 @@ class LLMRouter:
             import anthropic
             client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
             r = client.messages.create(model=model, max_tokens=max_tokens, system=system, messages=messages)
-            return r.content[0].text, r.usage.input_tokens, r.usage.output_tokens
+            text = "".join(getattr(b, "text", "") or "" for b in r.content if getattr(b, "type", "") == "text")
+            if not text:
+                raise RuntimeError("رد Claude بدون نص")
+            return text, r.usage.input_tokens, r.usage.output_tokens
         if provider in OPENAI_COMPAT_BASE:
             import httpx
             key = os.getenv("DEEPSEEK_API_KEY" if provider == "deepseek" else "GEMINI_API_KEY", "")
