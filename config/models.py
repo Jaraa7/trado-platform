@@ -18,14 +18,14 @@ MODELS: dict[str, dict] = {
     "anthropic:claude-haiku-4-5":       {"input": 1.00,  "output": 5.00,  "max_tokens": 4096},
     "deepseek:deepseek-chat":           {"input": 0.435, "output": 0.87,  "max_tokens": 8192},   # V4-Pro
     "deepseek:deepseek-flash":          {"input": 0.14,  "output": 0.28,  "max_tokens": 8192},   # V4-Flash
-    "google:gemini-3.1-pro":            {"input": 2.00,  "output": 12.00, "max_tokens": 8192},
+    "google:gemini-3.1-pro-preview":            {"input": 2.00,  "output": 12.00, "max_tokens": 8192},
     "google:gemini-3.5-flash-lite":     {"input": 0.30,  "output": 2.50,  "max_tokens": 8192},
 }
 
 # الفئة → [الأساسي, البديل من مزود مختلف]
 TIERS: dict[str, list[str]] = {
-    "frontier": ["anthropic:claude-sonnet-5", "google:gemini-3.1-pro"],
-    "standard": ["deepseek:deepseek-chat", "google:gemini-3.1-pro"],
+    "frontier": ["anthropic:claude-sonnet-5", "google:gemini-3.1-pro-preview"],
+    "standard": ["deepseek:deepseek-chat", "google:gemini-3.1-pro-preview"],
     "cheap":    ["deepseek:deepseek-flash", "google:gemini-3.5-flash-lite"],
 }
 
